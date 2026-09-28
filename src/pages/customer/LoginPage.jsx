@@ -62,17 +62,17 @@ export default function LoginPage() {
             </Link>
             <h2>
               {activeTab === 'register' ? 'สมัครสมาชิกใหม่' :
-               activeTab === 'admin_pin' ? 'เข้าสู่ระบบ Admin' :
+               activeTab === 'admin_pin' ? 'เข้าสู่ระบบผู้ดูแลระบบ (Admin)' :
                'เข้าสู่ระบบสมาชิก'}
             </h2>
             <p className="auth-subtext">
               {activeTab === 'register' ? 'ร่วมเป็นครอบครัว C-TOWN เพื่อรับสิทธิพิเศษและโปรโมชั่น' :
-               activeTab === 'admin_pin' ? 'กรอกรหัส PIN 4 หลักเพื่อเข้าสู่ระบบจัดการหลังบ้าน' :
+               activeTab === 'admin_pin' ? 'กรอกรหัสผ่านความปลอดภัยเพื่อเข้าสู่ระบบจัดการหลังบ้าน' :
                'ยินดีต้อนรับกลับมา เลือกชมและสั่งซื้อรองเท้าคู่โปรดของคุณ'}
             </p>
           </div>
 
-          {/* Three Tabs: Login, Register, Admin PIN */}
+          {/* Three Tabs: Login, Register, Admin */}
           <div className="auth-tabs three-tabs">
             <button
               type="button"
@@ -96,7 +96,7 @@ export default function LoginPage() {
               onClick={() => { setActiveTab('admin_pin'); setError(''); }}
               id="tab-admin-pin"
             >
-              <KeyRound size={15} /> Admin PIN
+              <ShieldCheck size={15} /> ผู้ดูแลระบบ
             </button>
           </div>
 
@@ -107,7 +107,7 @@ export default function LoginPage() {
             {activeTab === 'admin_pin' ? (
               <div className="admin-pin-view">
                 <div className="form-group text-center">
-                  <label htmlFor="admin-pin-input">รหัส PIN ผู้ดูแลระบบ (PIN 4 หลัก)</label>
+                  <label htmlFor="admin-pin-input">รหัสความปลอดภัยผู้ดูแลระบบ</label>
                   <div className="pin-input-big-wrap">
                     <input
                       id="admin-pin-input"
@@ -122,7 +122,7 @@ export default function LoginPage() {
                     />
                   </div>
                   <div className="pin-hint-text">
-                    💡 กดใส่รหัส <strong>1111</strong> แล้วกดปุ่มด้านล่าง (ระบบจะไม่แสดงรหัสผ่าน)
+                    🔒 กรุณากรอกรหัส 4 หลักเพื่อเข้าสู่ระบบจัดการหลังบ้าน (ระบบไม่แสดงรหัสผ่าน)
                   </div>
                 </div>
 
@@ -132,7 +132,7 @@ export default function LoginPage() {
                   disabled={loading || adminPin.length < 4}
                   id="btn-admin-pin-submit"
                 >
-                  {loading ? 'กำลังเข้าสู่ระบบ...' : <>เข้าสู่ระบบ Admin <ArrowRight size={18} /></>}
+                  {loading ? 'กำลังเข้าสู่ระบบ...' : <>เข้าสู่ระบบจัดการหลังบ้าน <ArrowRight size={18} /></>}
                 </button>
               </div>
             ) : (

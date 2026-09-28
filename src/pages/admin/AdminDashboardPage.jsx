@@ -46,7 +46,7 @@ export default function AdminDashboardPage() {
               ลองใหม่อีกครั้ง
             </button>
             <Link to="/login" className="btn-secondary btn-sm">
-              ไปหน้าเข้าสู่ระบบ (PIN 1111)
+              ไปหน้าเข้าสู่ระบบผู้ดูแล
             </Link>
           </div>
         </div>

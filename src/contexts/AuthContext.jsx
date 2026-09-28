@@ -37,13 +37,18 @@ export function AuthProvider({ children }) {
   }, []);
 
   const register = useCallback(async ({ email, password, passwordConfirm, name, phone }) => {
-    const record = await pb.collection('users').create({
-      email, password, passwordConfirm,
-      name, phone, role: 'CUSTOMER',
+    // Call server register endpoint with robust validation and profile linking
+    const regRes = await ctownFetch('/auth/register', {
+      method: 'POST',
+      body: { email, password, passwordConfirm, name, phone },
     });
-    await pb.collection('users').authWithPassword(email, password);
-    setUser(pb.authStore.model);
-    return record;
+    if (!regRes.success) {
+      throw new Error(regRes.message || 'การสมัครสมาชิกไม่สำเร็จ');
+    }
+    // Auto-login to obtain session
+    const auth = await pb.collection('users').authWithPassword(email, password);
+    setUser(auth.record);
+    return regRes.user || auth.record;
   }, []);
 
   const loginWithPin = useCallback(async (pin) => {

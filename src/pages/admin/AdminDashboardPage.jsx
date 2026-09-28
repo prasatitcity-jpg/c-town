@@ -34,7 +34,25 @@ export default function AdminDashboardPage() {
   }
 
   if (loading) return <div className="admin-loading-screen"><div className="spinner" /></div>;
-  if (error) return <div className="admin-error-box">{error}</div>;
+  if (error) {
+    return (
+      <div className="admin-dashboard-page">
+        <div className="admin-error-box p-4 bg-white rounded shadow-sm border text-center my-4">
+          <AlertTriangle size={36} className="text-danger mb-2 mx-auto" />
+          <h3 className="mb-2">เกิดข้อผิดพลาดในการโหลดแดชบอร์ด</h3>
+          <p className="text-muted mb-3">{error}</p>
+          <div className="d-flex gap-2 justify-content-center">
+            <button type="button" onClick={loadDashboard} className="btn-primary btn-sm">
+              ลองใหม่อีกครั้ง
+            </button>
+            <Link to="/login" className="btn-secondary btn-sm">
+              ไปหน้าเข้าสู่ระบบ (PIN 1111)
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const stats = data?.stats || {};
   const recentOrders = data?.recent_orders || [];
@@ -137,7 +155,7 @@ export default function AdminDashboardPage() {
                     return (
                       <tr key={o.id}>
                         <td><strong>#{o.order_number}</strong></td>
-                        <td>{o.shipping_address?.recipient_name || '-'}</td>
+                        <td>{o.shipping_address?.recipient_name || o.shipping_address_snapshot?.recipient_name || '-'}</td>
                         <td><strong>{formatPrice(o.grand_total)}</strong></td>
                         <td>
                           <span className="status-badge" style={{ color: st.color, backgroundColor: st.bg }}>

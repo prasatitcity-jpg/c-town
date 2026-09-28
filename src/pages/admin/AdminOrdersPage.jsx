@@ -241,8 +241,8 @@ export default function AdminOrdersPage() {
                       <td><strong>#{order.order_number}</strong></td>
                       <td>{formatDate(order.created)}</td>
                       <td>
-                        <div>{order.shipping_address?.recipient_name || '-'}</div>
-                        <small className="text-muted">{order.shipping_address?.phone || ''}</small>
+                        <div>{order.shipping_address?.recipient_name || order.shipping_address_snapshot?.recipient_name || '-'}</div>
+                        <small className="text-muted">{order.shipping_address?.phone || order.shipping_address_snapshot?.phone || ''}</small>
                       </td>
                       <td><strong>{formatPrice(order.grand_total)}</strong></td>
                       <td>
@@ -336,10 +336,18 @@ export default function AdminOrdersPage() {
 
                   <h4>ที่อยู่จัดส่ง</h4>
                   <div className="address-box">
-                    <strong>{selectedOrder.shipping_address?.recipient_name}</strong> ({selectedOrder.shipping_address?.phone})<br />
-                    {selectedOrder.shipping_address?.address_line}, {selectedOrder.shipping_address?.subdistrict},{' '}
-                    {selectedOrder.shipping_address?.district}, {selectedOrder.shipping_address?.province}{' '}
-                    {selectedOrder.shipping_address?.postal_code}
+                    {(() => {
+                      const addr = selectedOrder.shipping_address || selectedOrder.shipping_address_snapshot || {};
+                      return (
+                        <>
+                          <strong>{addr.recipient_name || '-'}</strong> {addr.phone ? `(${addr.phone})` : ''}<br />
+                          {addr.address_line ? `${addr.address_line}, ` : ''}
+                          {addr.subdistrict ? `${addr.subdistrict}, ` : ''}
+                          {addr.district ? `${addr.district}, ` : ''}
+                          {addr.province || ''} {addr.postal_code || ''}
+                        </>
+                      );
+                    })()}
                     {selectedOrder.notes && (
                       <div className="order-note-block">หมายเหตุ: {selectedOrder.notes}</div>
                     )}

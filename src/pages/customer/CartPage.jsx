@@ -10,17 +10,6 @@ export default function CartPage() {
   const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
 
-  if (!isLoggedIn) {
-    return (
-      <div className="cart-empty-page">
-        <ShoppingBag size={64} strokeWidth={1} />
-        <h2>กรุณาเข้าสู่ระบบ</h2>
-        <p>เพื่อเข้าถึงตะกร้าสินค้าของคุณ</p>
-        <Link to="/login" className="btn-primary" id="btn-cart-login">เข้าสู่ระบบ</Link>
-      </div>
-    );
-  }
-
   if (loading) return <div className="cart-loading"><div className="spinner" /></div>;
 
   if (cartItems.length === 0) {
@@ -37,8 +26,22 @@ export default function CartPage() {
   const shippingFee = subtotal >= 2500 ? 0 : 60;
   const grandTotal = subtotal + shippingFee;
 
+  const handleCheckout = () => {
+    if (!isLoggedIn) {
+      navigate('/login?redirect=/checkout');
+    } else {
+      navigate('/checkout');
+    }
+  };
+
   return (
     <div className="cart-page">
+      {!isLoggedIn && (
+        <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', padding: '12px 18px', borderRadius: '10px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ color: '#1E40AF', fontSize: '14px' }}>💡 คุณกำลังดูรายการสินค้าในตะกร้า — เข้าสู่ระบบเพื่อดำเนินการสั่งซื้อและสะสมคะแนน</span>
+          <Link to="/login?redirect=/cart" className="btn-secondary btn-sm" style={{ whiteSpace: 'nowrap' }}>เข้าสู่ระบบ</Link>
+        </div>
+      )}
       <h1 className="cart-page-title">ตะกร้าสินค้า</h1>
 
       <div className="cart-layout">
@@ -124,10 +127,10 @@ export default function CartPage() {
 
           <button
             className="btn-checkout"
-            onClick={() => navigate('/checkout')}
+            onClick={handleCheckout}
             id="btn-goto-checkout"
           >
-            ดำเนินการชำระเงิน <ArrowRight size={16} />
+            {isLoggedIn ? 'ดำเนินการชำระเงิน' : 'เข้าสู่ระบบเพื่อสั่งซื้อ'} <ArrowRight size={16} />
           </button>
 
           <Link to="/products" className="btn-continue-shopping" id="btn-continue-shopping">

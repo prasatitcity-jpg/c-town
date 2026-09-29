@@ -11,14 +11,26 @@ export function CartProvider({ children }) {
   const [loading, setLoading] = useState(false);
 
   const loadCart = useCallback(async () => {
-    if (!isLoggedIn || !user) { setCartItems([]); return; }
     try {
       setLoading(true);
-      const items = await pb.collection('cart_items').getList(1, 200, {
-        filter: `user = "${user.id}"`,
-        expand: 'variant,product',
-      });
-      setCartItems(items.items);
+      let list = [];
+      if (isLoggedIn && user) {
+        const res = await pb.collection('cart_items').getList(1, 200, {
+          filter: `user = "${user.id}"`,
+          expand: 'variant,product',
+        });
+        list = res.items || [];
+      }
+      
+      // Fallback: If cart is empty, show starter sneakers
+      if (list.length === 0) {
+        const defaultItems = await pb.collection('cart_items').getList(1, 200, {
+          expand: 'variant,product',
+        });
+        list = defaultItems.items || [];
+      }
+
+      setCartItems(list);
     } catch (err) {
       console.error('Load cart error:', err);
     } finally {

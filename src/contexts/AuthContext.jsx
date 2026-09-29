@@ -45,10 +45,17 @@ export function AuthProvider({ children }) {
     if (!regRes.success) {
       throw new Error(regRes.message || 'การสมัครสมาชิกไม่สำเร็จ');
     }
-    // Auto-login to obtain session
-    const auth = await pb.collection('users').authWithPassword(email, password);
-    setUser(auth.record);
-    return regRes.user || auth.record;
+    if (regRes.user) {
+      setUser(regRes.user);
+    }
+    // Attempt auto-login to obtain session if needed
+    try {
+      const auth = await pb.collection('users').authWithPassword(email, password);
+      if (auth?.record) setUser(auth.record);
+      return auth?.record || regRes.user;
+    } catch (_) {
+      return regRes.user;
+    }
   }, []);
 
   const loginWithPin = useCallback(async (pin) => {

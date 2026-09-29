@@ -304,8 +304,15 @@ function createSupabaseCollection(collectionName) {
 
     // Auth methods for users collection
     async authWithPassword(email, password) {
+      const cleanEmail = (email || '').trim().toLowerCase();
+
+      // 0. If already authenticated with this email (e.g. from recent register)
+      if (supabaseAuthStore.isValid && supabaseAuthStore.model?.email?.toLowerCase() === cleanEmail) {
+        return { record: supabaseAuthStore.model, token: supabaseAuthStore.token };
+      }
+
       // 1. Check special admin credentials
-      if (email === 'admin@ctown.local' && password === 'Admin1111!') {
+      if (cleanEmail === 'admin@ctown.local' && password === 'Admin1111!') {
         const adminUser = {
           id: '2t243534z0gmfuh',
           email: 'admin@ctown.local',

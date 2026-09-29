@@ -762,7 +762,7 @@ export async function ctownFetch(path, options = {}) {
   // 2. Admin PIN Login
   if (path === '/admin/pin-login') {
     const { pin } = body;
-    if (pin === '1111') {
+    if (String(pin).trim() === '1111') {
       const adminUser = {
         id: '2t243534z0gmfuh',
         email: 'admin@ctown.local',
@@ -771,7 +771,13 @@ export async function ctownFetch(path, options = {}) {
         phone: '081-999-8888'
       };
       supabaseAuthStore.save('admin_token_' + Date.now(), adminUser);
-      return { success: true, token: supabaseAuthStore.token, admin: adminUser };
+      return {
+        success: true,
+        token: supabaseAuthStore.token,
+        admin: adminUser,
+        email: 'admin@ctown.local',
+        password: 'Admin1111!'
+      };
     }
     throw new Error('PIN ไม่ถูกต้อง (PIN เริ่มต้นคือ 1111)');
   }

@@ -379,18 +379,30 @@ function createUniversalCollection(collectionName) {
         }
       }
 
-      // Fallback to DEFAULT_DATABASE if Supabase has 0 rows or errored or not configured
-      if (items.length === 0 && DEFAULT_DATABASE[collectionName]?.length > 0) {
-        let defaultList = [...DEFAULT_DATABASE[collectionName]];
-        if (options.filter) {
-          defaultList = filterDefaultItems(defaultList, options.filter);
+      // Fallback to DEFAULT_DATABASE or localStorage if Supabase has 0 rows or errored or not configured
+      if (items.length === 0) {
+        let sourceList = DEFAULT_DATABASE[collectionName] || [];
+        if (typeof window !== 'undefined' && (collectionName === 'messages' || collectionName === 'conversations')) {
+          try {
+            const stored = localStorage.getItem(`ctown_db_${collectionName}`);
+            if (stored) {
+              const parsed = JSON.parse(stored);
+              if (Array.isArray(parsed) && parsed.length > 0) sourceList = parsed;
+            }
+          } catch (_) {}
         }
-        if (options.sort) {
-          defaultList = sortDefaultItems(defaultList, options.sort);
+        if (sourceList.length > 0) {
+          let defaultList = [...sourceList];
+          if (options.filter) {
+            defaultList = filterDefaultItems(defaultList, options.filter);
+          }
+          if (options.sort) {
+            defaultList = sortDefaultItems(defaultList, options.sort);
+          }
+          totalCount = defaultList.length;
+          const from = (page - 1) * perPage;
+          items = defaultList.slice(from, from + perPage);
         }
-        totalCount = defaultList.length;
-        const from = (page - 1) * perPage;
-        items = defaultList.slice(from, from + perPage);
       }
 
       for (const item of items) {
@@ -604,9 +616,36 @@ function createUniversalCollection(collectionName) {
         } catch (_) {}
       }
 
+      // Local & cross-tab realtime event listener for instant chat & sync
+      let localListener = null;
+      let storageListener = null;
+      if (typeof window !== 'undefined') {
+        localListener = (e) => {
+          if (!e.detail?.collection || e.detail?.collection === collectionName) {
+            callback(e.detail);
+          }
+        };
+        storageListener = (se) => {
+          if (se.key === 'ctown_chat_event' && se.newValue) {
+            try {
+              const data = JSON.parse(se.newValue);
+              if (!data.collection || data.collection === collectionName) {
+                callback(data);
+              }
+            } catch (_) {}
+          }
+        };
+        window.addEventListener('ctown_chat_event', localListener);
+        window.addEventListener('storage', storageListener);
+      }
+
       const unsub = () => {
         if (supabase && channel) {
           try { supabase.removeChannel(channel); } catch (_) {}
+        }
+        if (typeof window !== 'undefined') {
+          if (localListener) window.removeEventListener('ctown_chat_event', localListener);
+          if (storageListener) window.removeEventListener('storage', storageListener);
         }
       };
       unsub.then = function (onResolve) {
@@ -1142,6 +1181,15 @@ export async function ctownFetch(path, options = {}) {
       };
       if (DEFAULT_DATABASE.conversations) DEFAULT_DATABASE.conversations.unshift(conv);
 
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('ctown_db_conversations', JSON.stringify(DEFAULT_DATABASE.conversations));
+          const convEvt = { action: 'create', record: conv, collection: 'conversations' };
+          window.dispatchEvent(new CustomEvent('ctown_chat_event', { detail: convEvt }));
+          localStorage.setItem('ctown_chat_event', JSON.stringify({ ...convEvt, _t: Date.now() }));
+        } catch (_) {}
+      }
+
       if (supabase) {
         try {
           await supabase.from('conversations').upsert({
@@ -1185,9 +1233,27 @@ export async function ctownFetch(path, options = {}) {
       conv.last_message_at = new Date().toISOString();
     }
 
+    // Persist to localStorage and dispatch event
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('ctown_db_messages', JSON.stringify(DEFAULT_DATABASE.messages));
+        localStorage.setItem('ctown_db_conversations', JSON.stringify(DEFAULT_DATABASE.conversations));
+        const eventData = { action: 'create', record: msg, collection: 'messages' };
+        window.dispatchEvent(new CustomEvent('ctown_chat_event', { detail: eventData }));
+        localStorage.setItem('ctown_chat_event', JSON.stringify({ ...eventData, _t: Date.now() }));
+      } catch (_) {}
+    }
+
     if (supabase) {
       try {
-        await supabase.from('messages').insert(msg);
+        await supabase.from('messages').insert({
+          id: msg.id,
+          conversation: msg.conversation,
+          sender_id: msg.sender_id,
+          sender_type: msg.sender_type,
+          message_text: msg.message_text,
+          is_read: false
+        });
         await supabase.from('conversations').update({
           last_message: message_text,
           last_message_at: new Date().toISOString()

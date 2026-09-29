@@ -79,23 +79,40 @@ export default function AdminChatPage() {
     e.preventDefault();
     if (!replyText.trim() || !activeConv || sending) return;
 
+    const replyToSend = replyText.trim();
+    setReplyText('');
     setSending(true);
+
+    // Optimistic UI update in Admin Chat
+    const optimisticReply = {
+      id: 'msg_' + Date.now(),
+      conversation: activeConv.id,
+      sender_id: user?.id || 'admin_staff',
+      sender_type: 'ADMIN',
+      sender_role: 'ADMIN',
+      message_text: replyToSend,
+      created: new Date().toISOString()
+    };
+    setMessages(prev => [...prev, optimisticReply]);
+
     try {
       await ctownFetch('/chat/send', {
         method: 'POST',
         body: {
           conversation_id: activeConv.id,
-          message_text: replyText.trim(),
+          message_text: replyToSend,
+          sender_id: user?.id || 'admin_staff',
+          sender_type: 'ADMIN'
         },
       });
 
-      setReplyText('');
       // Reload messages for this conv
       const mRes = await pb.collection('messages').getList(1, 100, {
         filter: `conversation = "${activeConv.id}"`,
         sort: 'id',
       });
       setMessages(mRes.items);
+      loadConversations();
     } catch (err) {
       alert('ส่งข้อความไม่สำเร็จ: ' + err.message);
     } finally {

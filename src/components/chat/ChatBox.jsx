@@ -9,10 +9,10 @@ import {
   Clock,
   CheckCheck,
   Sparkles,
-  HelpCircle,
   Package,
   CreditCard,
-  Truck
+  Truck,
+  RotateCcw
 } from 'lucide-react';
 
 export default function ChatBox({ compact = false }) {
@@ -23,14 +23,19 @@ export default function ChatBox({ compact = false }) {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [guestName, setGuestName] = useState(() => localStorage.getItem('ctown_guest_chat_name') || 'ลูกค้า');
+  const [isTyping, setIsTyping] = useState(false);
+  const [guestName, setGuestName] = useState(() => {
+    try {
+      return localStorage.getItem('ctown_guest_chat_name') || 'ลูกค้า';
+    } catch (_) {
+      return 'ลูกค้า';
+    }
+  });
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(guestName);
-  
+
   const bottomRef = useRef(null);
 
-  // Quick inquiry chips
   const quickQuestions = [
     { label: '👟 ปรึกษาไซซ์รองเท้า', text: 'สวัสดีครับ อยากปรึกษาเรื่องไซซ์รองเท้า เท้ายาวประมาณ ... ควรเลือกไซซ์ไหนดีครับ' },
     { label: '📦 สอบถามสถานะคำสั่งซื้อ', text: searchParams.get('order') ? `สวัสดีครับ ขอสอบถามสถานะคำสั่งซื้อ #${searchParams.get('order')} ครับ` : 'สวัสดีครับ ต้องการตรวจสอบสถานะคำสั่งซื้อครับ' },
@@ -39,99 +44,117 @@ export default function ChatBox({ compact = false }) {
   ];
 
   useEffect(() => {
-    initChat();
+    let unsub = null;
 
-    // If order param passed, set initial text
-    const orderParam = searchParams.get('order');
-    if (orderParam) {
-      setText(`สวัสดีครับ ขอสอบถามสถานะคำสั่งซื้อ #${orderParam} ครับ`);
-    }
-  }, [isLoggedIn, user]);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  async function initChat() {
-    setLoading(true);
-    try {
-      // 1. Determine guest ID or user ID
-      let guestId = localStorage.getItem('ctown_guest_chat_id');
-      if (!guestId) {
-        guestId = 'guest_' + Math.random().toString(36).slice(2, 9);
-        localStorage.setItem('ctown_guest_chat_id', guestId);
-      }
-
-      const activeName = isLoggedIn ? user?.name : guestName;
-
-      // 2. Fetch or create conversation
-      const convRes = await ctownFetch('/chat/conversation', {
-        method: 'POST',
-        body: {
-          guest_id: guestId,
-          guest_name: activeName
-        }
-      });
-
-      const cid = convRes.conversation.id;
-      setConversationId(cid);
-      await loadMessages(cid);
-
-      // Subscribe to messages realtime
-      let unsub = null;
+    async function setupChat() {
       try {
-        pb.collection('messages').subscribe('*', (e) => {
-          if (e.action === 'create' && e.record.conversation === cid) {
+        let guestId = localStorage.getItem('ctown_guest_chat_id');
+        if (!guestId) {
+          guestId = 'guest_' + Math.random().toString(36).slice(2, 9);
+          localStorage.setItem('ctown_guest_chat_id', guestId);
+        }
+
+        const activeName = isLoggedIn ? (user?.name || 'ลูกค้า') : guestName;
+
+        const convRes = await ctownFetch('/chat/conversation', {
+          method: 'POST',
+          body: {
+            guest_id: guestId,
+            guest_name: activeName
+          }
+        });
+
+        const cid = convRes.conversation.id;
+        setConversationId(cid);
+
+        // Load existing messages
+        const msgs = await pb.collection('messages').getList(1, 100, {
+          filter: `conversation = "${cid}"`,
+          sort: 'id',
+        });
+        setMessages(msgs.items || []);
+
+        // Subscribe to real-time messages
+        unsub = pb.collection('messages').subscribe('*', (e) => {
+          if (e.action === 'create' && e.record?.conversation === cid) {
             setMessages(prev => {
               if (prev.some(m => m.id === e.record.id)) return prev;
               return [...prev, e.record];
             });
-            bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+            setIsTyping(false);
           }
-        }).then(u => { unsub = u; });
-      } catch (_) {}
-
-      return () => { if (unsub) unsub(); };
-    } catch (err) {
-      console.error('Chat init error:', err);
-    } finally {
-      setLoading(false);
+        });
+      } catch (err) {
+        console.error('Chat setup err:', err);
+      }
     }
-  }
 
-  async function loadMessages(cid) {
-    try {
-      const msgs = await pb.collection('messages').getList(1, 100, {
-        filter: `conversation = "${cid}"`,
-        sort: 'id',
-      });
-      setMessages(msgs.items);
-    } catch (_) {}
-  }
+    setupChat();
+
+    const orderParam = searchParams.get('order');
+    if (orderParam) {
+      setText(`สวัสดีครับ ขอสอบถามสถานะคำสั่งซื้อ #${orderParam} ครับ`);
+    }
+
+    return () => {
+      if (unsub) {
+        try { unsub(); } catch (_) {}
+      }
+    };
+  }, [isLoggedIn, user]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isTyping]);
 
   async function handleSend(e) {
     e?.preventDefault();
-    if (!text.trim() || !conversationId || sending) return;
+    if (!text.trim() || sending) return;
 
-    const msgToSend = text.trim();
+    const userText = text.trim();
     setText('');
     setSending(true);
 
-    try {
-      let guestId = localStorage.getItem('ctown_guest_chat_id');
-      const senderId = isLoggedIn ? user?.id : (guestId || 'guest_user');
+    let activeCid = conversationId;
+    let guestId = localStorage.getItem('ctown_guest_chat_id');
+    if (!guestId) {
+      guestId = 'guest_' + Math.random().toString(36).slice(2, 9);
+      localStorage.setItem('ctown_guest_chat_id', guestId);
+    }
 
+    if (!activeCid) {
+      activeCid = 'conv_' + guestId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10);
+      setConversationId(activeCid);
+    }
+
+    const senderId = isLoggedIn ? (user?.id || 'usr_cust') : guestId;
+
+    // 1. Optimistic UI update immediately
+    const clientMsg = {
+      id: 'msg_' + Date.now(),
+      conversation: activeCid,
+      sender_id: senderId,
+      sender_type: 'CUSTOMER',
+      sender_role: 'CUSTOMER',
+      message_text: userText,
+      created: new Date().toISOString()
+    };
+    setMessages(prev => [...prev, clientMsg]);
+
+    try {
+      // 2. Send to backend/store
       await ctownFetch('/chat/send', {
         method: 'POST',
         body: {
-          conversation_id: conversationId,
-          message_text: msgToSend,
+          conversation_id: activeCid,
+          message_text: userText,
           sender_id: senderId,
           sender_type: 'CUSTOMER'
         }
       });
 
-      await loadMessages(conversationId);
+      // 3. Automated Store Assistant Response
+      triggerAutoReply(activeCid, userText);
     } catch (err) {
       console.error('Send error:', err);
     } finally {
@@ -139,11 +162,46 @@ export default function ChatBox({ compact = false }) {
     }
   }
 
+  function triggerAutoReply(cid, customerMessage) {
+    setIsTyping(true);
+
+    setTimeout(async () => {
+      const lower = customerMessage.toLowerCase();
+      let botReply = '';
+
+      if (lower.includes('ไซซ์') || lower.includes('size') || lower.includes('เบอร์') || lower.includes('ขนาด')) {
+        botReply = '👟 ข้อมูลเรื่องไซซ์รองเท้า C-TOWN:\n• สำหรับ Nike และ Adidas ส่วนใหญ่แนะนำเลือกตรงไซซ์ปกติ (True To Size) ครับ หากหน้าเท้ากว้างแนะนำเผื่อ +0.5 ไซซ์\n• สำหรับ New Balance, Converse และ Vans สวมใส่สบายตามเบอร์ปกติครับ\nลูกค้าสามารถแจ้งความยาวเท้า (cm) หรือรุ่นที่สนใจในแชทนี้ได้เลยครับ ทีมงานจะช่วยเทียบไซซ์ให้อย่างแม่นยำครับ ✨';
+      } else if (lower.includes('ออเดอร์') || lower.includes('คำสั่งซื้อ') || lower.includes('order') || lower.includes('พัสดุ') || lower.includes('ส่งของ') || lower.includes('ct-ord')) {
+        botReply = '📦 การตรวจสอบสถานะพัสดุ:\nทางร้านจัดส่งสินค้าทุกวันจันทร์–เสาร์ ตัดรอบเวลา 14:00 น. โดย Flash Express และ Kerry Express (ส่งฟรีเมื่อสั่งซื้อครบ ฿2,500)\nท่านสามารถตรวจสอบสถานะได้ทันทีที่เมนู "ติดตามคำสั่งซื้อ" หรือแจ้งหมายเลขคำสั่งซื้อในแชทนี้ เพื่อให้แอดมินเช็กให้ได้เลยครับ!';
+      } else if (lower.includes('โอน') || lower.includes('สลิป') || lower.includes('ชำระ') || lower.includes('จ่าย') || lower.includes('เงิน')) {
+        botReply = '💸 ข้อมูลการชำระเงิน:\nสามารถโอนเงินผ่านบัญชีธนาคาร:\n• ธนาคารกสิกรไทย: 123-4-56789-0 (บจก. ซี-ทาวน์ สเนีกเกอร์ สโตร์)\n• ธนาคารไทยพาณิชย์: 987-6-54321-0\nเมื่อโอนแล้วสามารถแนบสลิปในหน้าสั่งซื้อ หรือส่งรูปสลิปในแชทนี้ได้เลยครับ เจ้าหน้าที่จะตรวจสอบยอดและอนุมัติให้ภายใน 15 นาทีครับ';
+      } else {
+        botReply = 'ขอบคุณที่ทักแชทเข้ามายัง C-TOWN SNEAKER STORE ครับ! 😊\nทางร้านได้รับข้อความของท่านแล้ว เจ้าหน้าที่กำลังรีบเข้ามาดูแลและตอบกลับโดยเร็วที่สุดครับ (เวลาทำการ 10:00 - 21:00 น.) มีคำถามเรื่องรุ่นรองเท้าหรือไซซ์เพิ่มเติมพิมพ์ทิ้งไว้ได้เลยครับ!';
+      }
+
+      try {
+        await ctownFetch('/chat/send', {
+          method: 'POST',
+          body: {
+            conversation_id: cid,
+            message_text: botReply,
+            sender_id: 'bot_c_town_assistant',
+            sender_type: 'ADMIN'
+          }
+        });
+      } catch (_) {}
+
+      setIsTyping(false);
+    }, 1200);
+  }
+
   const handleSaveName = (e) => {
     e.preventDefault();
     if (!nameInput.trim()) return;
     setGuestName(nameInput.trim());
-    localStorage.setItem('ctown_guest_chat_name', nameInput.trim());
+    try {
+      localStorage.setItem('ctown_guest_chat_name', nameInput.trim());
+    } catch (_) {}
     setEditingName(false);
   };
 
@@ -240,7 +298,7 @@ export default function ChatBox({ compact = false }) {
           <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#E11D48', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700, flexShrink: 0 }}>
             CT
           </div>
-          <div style={{ maxWidth: '80%' }}>
+          <div style={{ maxWidth: '82%' }}>
             <span style={{ fontSize: '0.75rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>เจ้าหน้าที่ C-TOWN</span>
             <div style={{ background: '#fff', padding: '12px 16px', borderRadius: '4px 16px 16px 16px', border: '1px solid #E2E8F0', color: '#1E293B', fontSize: '0.9rem', lineHeight: 1.5, boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
               ยินดีต้อนรับสู่ C-TOWN SNEAKER STORE ครับ! 👟✨<br />
@@ -267,9 +325,9 @@ export default function ChatBox({ compact = false }) {
                   CT
                 </div>
               )}
-              <div style={{ maxWidth: '80%', textAlign: isStaff ? 'left' : 'right' }}>
+              <div style={{ maxWidth: '82%', textAlign: isStaff ? 'left' : 'right' }}>
                 <span style={{ fontSize: '0.75rem', color: '#64748B', display: 'block', marginBottom: '4px' }}>
-                  {isStaff ? 'เจ้าหน้าที่ C-TOWN' : (isLoggedIn ? user?.name : guestName)}
+                  {isStaff ? 'เจ้าหน้าที่ C-TOWN' : (isLoggedIn ? (user?.name || 'ลูกค้า') : guestName)}
                 </span>
                 <div
                   style={{
@@ -281,7 +339,8 @@ export default function ChatBox({ compact = false }) {
                     fontSize: '0.9rem',
                     lineHeight: 1.5,
                     boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-                    textAlign: 'left'
+                    textAlign: 'left',
+                    whiteSpace: 'pre-line'
                   }}
                 >
                   {m.message_text}
@@ -293,6 +352,18 @@ export default function ChatBox({ compact = false }) {
             </div>
           );
         })}
+
+        {/* Typing Indicator */}
+        {isTyping && (
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#E11D48', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700, flexShrink: 0 }}>
+              CT
+            </div>
+            <div style={{ background: '#fff', padding: '10px 16px', borderRadius: '16px', border: '1px solid #E2E8F0', fontSize: '0.85rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontStyle: 'italic' }}>เจ้าหน้าที่ C-TOWN กำลังพิมพ์...</span>
+            </div>
+          </div>
+        )}
 
         <div ref={bottomRef} />
       </div>
@@ -308,11 +379,12 @@ export default function ChatBox({ compact = false }) {
               background: '#fff',
               border: '1px solid #CBD5E1',
               borderRadius: '20px',
-              padding: '5px 12px',
-              fontSize: '0.78rem',
+              padding: '6px 14px',
+              fontSize: '0.8rem',
               color: '#334155',
               cursor: 'pointer',
-              flexShrink: 0
+              flexShrink: 0,
+              fontWeight: 500
             }}
           >
             {q.label}
@@ -324,7 +396,7 @@ export default function ChatBox({ compact = false }) {
       <form onSubmit={handleSend} style={{ display: 'flex', padding: '12px 16px', background: '#fff', borderTop: '1px solid #E2E8F0', gap: '8px' }}>
         <input
           type="text"
-          placeholder="พิมพ์ข้อความสอบถามร้านค้าที่นี่..."
+          placeholder="พิมพ์ข้อความสอบถามร้านค้าที่นี่ (เช่น ปรึกษาไซซ์, เช็กของ)..."
           value={text}
           onChange={e => setText(e.target.value)}
           style={{
@@ -336,6 +408,7 @@ export default function ChatBox({ compact = false }) {
             outline: 'none'
           }}
           disabled={sending}
+          autoFocus={!compact}
         />
         <button
           type="submit"

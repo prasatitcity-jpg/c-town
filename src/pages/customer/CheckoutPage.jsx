@@ -180,6 +180,24 @@ export default function CheckoutPage() {
       }
 
       clearCart();
+
+      // Save recent order to localStorage for easy 1-click tracking
+      try {
+        const savedRecent = JSON.parse(localStorage.getItem('ctown_my_orders') || '[]');
+        const newRecent = [
+          {
+            id: createdOrder.id,
+            order_number: createdOrder.order_number,
+            grand_total: createdOrder.grand_total,
+            created: createdOrder.created,
+            order_status: createdOrder.order_status,
+            item_count: orderData.items.length
+          },
+          ...savedRecent.filter(o => o.order_number !== createdOrder.order_number)
+        ].slice(0, 10);
+        localStorage.setItem('ctown_my_orders', JSON.stringify(newRecent));
+      } catch (_) {}
+
       setOrder(createdOrder);
     } catch (err) {
       alert('เกิดข้อผิดพลาดในการสั่งซื้อ: ' + err.message);
@@ -249,7 +267,7 @@ export default function CheckoutPage() {
           <Link to="/products" className="btn-primary" style={{ padding: '12px 24px', borderRadius: '10px', textDecoration: 'none' }}>
             เลือกดูสินค้าต่อ
           </Link>
-          <Link to="/track-order" className="btn-secondary" style={{ padding: '12px 24px', borderRadius: '10px', textDecoration: 'none' }}>
+          <Link to={`/track-order?order=${order.order_number}`} className="btn-secondary" style={{ padding: '12px 24px', borderRadius: '10px', textDecoration: 'none' }}>
             ติดตามสถานะพัสดุ
           </Link>
         </div>

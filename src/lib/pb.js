@@ -35,14 +35,13 @@ function saveStoredAuth(token, model) {
 // -------------------------------------------------------------
 function applyPbFilterToSupabase(query, filterStr) {
   if (!filterStr || typeof filterStr !== 'string') return query;
+  const trimmed = filterStr.trim();
 
-  // Check for grouped OR clauses like `(a ~ "x" || b ~ "y")`
-  const orGroupMatch = filterStr.match(/\(([^)]+)\)/);
-  if (orGroupMatch) {
-    const inner = orGroupMatch[1];
-    const orParts = inner.split(/\s*\|\|\s*/);
+  // Check for any OR clauses like `(a ~ "x" || b ~ "y")` or `a = "x" || b = "y"`
+  if (trimmed.includes('||')) {
+    const rawOrParts = trimmed.replace(/^\(|\)$/g, '').split(/\s*\|\|\s*/);
     const subConds = [];
-    for (const op of orParts) {
+    for (const op of rawOrParts) {
       const m = op.trim().match(/^([\w_]+)\s*(=|!=|>|>=|<|<=|~)\s*(.+)$/);
       if (m) {
         const col = m[1];
@@ -58,7 +57,7 @@ function applyPbFilterToSupabase(query, filterStr) {
   }
 
   // Handle simple `field = value` or `field ~ value`
-  const parts = filterStr.split(/\s*&&\s*/);
+  const parts = trimmed.split(/\s*&&\s*/);
   for (const part of parts) {
     const m = part.trim().match(/^([\w_]+)\s*(=|!=|>|>=|<|<=|~)\s*(.+)$/);
     if (m) {
@@ -87,10 +86,29 @@ function applyPbFilterToSupabase(query, filterStr) {
 // -------------------------------------------------------------
 function filterDefaultItems(items, filterStr) {
   if (!filterStr || typeof filterStr !== 'string') return items;
+  const trimmed = filterStr.trim();
+
+  // If there's an OR expression without &&
+  if (trimmed.includes('||') && !trimmed.includes('&&')) {
+    const rawOrParts = trimmed.replace(/^\(|\)$/g, '').split(/\s*\|\|\s*/);
+    return items.filter(item => {
+      return rawOrParts.some(part => {
+        const m = part.trim().match(/^([\w_]+)\s*(=|!=|>|>=|<|<=|~)\s*(.+)$/);
+        if (!m) return false;
+        const col = m[1];
+        const op = m[2];
+        const val = m[3].trim().replace(/^['"]|['"]$/g, '').toLowerCase();
+        const itemVal = String(item[col] || '').toLowerCase();
+        if (op === '=') return itemVal === val;
+        if (op === '~') return itemVal.includes(val);
+        return false;
+      });
+    });
+  }
 
   return items.filter(item => {
     // Check OR group like `(name ~ "x" || description ~ "x")`
-    const orGroupMatch = filterStr.match(/\(([^)]+)\)/);
+    const orGroupMatch = trimmed.match(/\(([^)]+)\)/);
     if (orGroupMatch) {
       const inner = orGroupMatch[1];
       const orParts = inner.split(/\s*\|\|\s*/);
@@ -109,7 +127,7 @@ function filterDefaultItems(items, filterStr) {
     }
 
     // Split on &&
-    const parts = filterStr.replace(/\([^)]+\)/, '').split(/\s*&&\s*/).filter(Boolean);
+    const parts = trimmed.replace(/\([^)]+\)/g, '').split(/\s*&&\s*/).filter(Boolean);
     for (const part of parts) {
       const m = part.trim().match(/^([\w_]+)\s*(=|!=|>|>=|<|<=|~)\s*(.+)$/);
       if (m) {
@@ -122,9 +140,9 @@ function filterDefaultItems(items, filterStr) {
 
         const itemVal = item[col];
         if (op === '=') {
-          if (itemVal != val) return false;
+          if (String(itemVal || '').toLowerCase() !== String(val).toLowerCase()) return false;
         } else if (op === '!=') {
-          if (itemVal == val) return false;
+          if (String(itemVal || '').toLowerCase() === String(val).toLowerCase()) return false;
         } else if (op === '>') {
           if (!(Number(itemVal) > Number(val))) return false;
         } else if (op === '>=') {
@@ -839,7 +857,7 @@ export async function ctownFetch(path, options = {}) {
   if (path === '/checkout') {
     const { items, shipping_address, coupon_code, payment_method, notes } = body;
     const currentUser = supabaseAuthStore.model;
-    if (!currentUser) throw new Error('กรุณาเข้าสู่ระบบก่อนทำการสั่งซื้อ');
+    const customerId = currentUser ? currentUser.id : ('guest_' + Math.random().toString(36).slice(2, 10));
 
     const orderNumber = `CT-ORD-${Date.now().toString().slice(-6)}`;
     const orderId = 'ord_' + Math.random().toString(36).slice(2, 10);
@@ -867,8 +885,10 @@ export async function ctownFetch(path, options = {}) {
     const newOrder = {
       id: orderId,
       order_number: orderNumber,
-      user: currentUser.id,
-      shipping_address_snapshot: typeof shipping_address === 'string' ? shipping_address : JSON.stringify(shipping_address),
+      user: currentUser ? currentUser.id : customerId,
+      customer: customerId,
+      shipping_address: typeof shipping_address === 'string' ? shipping_address : JSON.stringify(shipping_address),
+      shipping_address_snapshot: typeof shipping_address === 'object' && shipping_address !== null ? shipping_address : (function() { try { return JSON.parse(shipping_address); } catch(_) { return {}; } })(),
       subtotal,
       discount_amount: discountAmount,
       coupon: couponId,
@@ -1096,31 +1116,59 @@ export async function ctownFetch(path, options = {}) {
   // 8. Chat Endpoints
   if (path === '/chat/conversation') {
     const currentUser = supabaseAuthStore.model;
-    if (!currentUser) throw new Error('Not logged in');
+    const guestId = body.guest_id || 'guest_' + Math.random().toString(36).slice(2, 10);
+    const userId = currentUser ? currentUser.id : guestId;
+    const userName = currentUser ? currentUser.name : (body.guest_name || 'ลูกค้าทั่วไป');
 
-    let conv = DEFAULT_DATABASE.conversations?.find(c => c.user === currentUser.id);
+    let conv = DEFAULT_DATABASE.conversations?.find(c => c.user === userId || c.id === 'conv_' + userId.slice(0, 10));
     if (!conv) {
       conv = {
-        id: 'conv_' + currentUser.id.slice(0, 10),
-        user: currentUser.id,
+        id: 'conv_' + userId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10),
+        user: userId,
+        expand: {
+          user: {
+            id: userId,
+            name: userName,
+            email: currentUser ? currentUser.email : 'guest@c-town.com',
+            role: 'CUSTOMER'
+          }
+        },
         subject: 'สอบถามข้อมูลรองเท้า C-TOWN',
         status: 'open',
-        last_message: 'สวัสดีครับ สอบถามข้อมูลเพิ่มเติมได้เลยครับ',
-        last_message_at: new Date().toISOString()
+        last_message: 'ยินดีต้อนรับสู่ C-TOWN SNEAKER STORE สอบถามข้อมูลหรือปรึกษาไซซ์ได้เลยครับ',
+        last_message_at: new Date().toISOString(),
+        created: new Date().toISOString(),
+        created_at: new Date().toISOString()
       };
-      if (DEFAULT_DATABASE.conversations) DEFAULT_DATABASE.conversations.push(conv);
+      if (DEFAULT_DATABASE.conversations) DEFAULT_DATABASE.conversations.unshift(conv);
+
+      if (supabase) {
+        try {
+          await supabase.from('conversations').upsert({
+            id: conv.id,
+            user: userId,
+            subject: conv.subject,
+            status: conv.status,
+            last_message: conv.last_message,
+            last_message_at: conv.last_message_at
+          });
+        } catch (_) {}
+      }
     }
-    return { success: true, conversation: conv };
+    return { success: true, conversation: conv, user_id: userId };
   }
 
   if (path === '/chat/send') {
-    const { conversation_id, message_text, sender_type } = body;
+    const { conversation_id, message_text, sender_type, sender_id } = body;
     const currentUser = supabaseAuthStore.model;
+    const finalSenderId = sender_id || (currentUser ? currentUser.id : 'guest_customer');
+    const finalSenderType = sender_type || (currentUser?.role === 'ADMIN' ? 'ADMIN' : 'CUSTOMER');
     const msg = {
       id: 'msg_' + Math.random().toString(36).slice(2, 10),
       conversation: conversation_id,
-      sender_id: currentUser ? currentUser.id : '2t243534z0gmfuh',
-      sender_type: sender_type || (currentUser?.role === 'ADMIN' ? 'ADMIN' : 'CUSTOMER'),
+      sender_id: finalSenderId,
+      sender_type: finalSenderType,
+      sender_role: finalSenderType,
       message_text,
       is_read: 0,
       attachment_image: '',

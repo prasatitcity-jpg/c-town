@@ -29,6 +29,7 @@ import AdminProductsPage from './pages/admin/AdminProductsPage';
 import AdminStockPage from './pages/admin/AdminStockPage';
 import AdminCouponsPage from './pages/admin/AdminCouponsPage';
 import AdminChatPage from './pages/admin/AdminChatPage';
+import FloatingChatWidget from './components/chat/FloatingChatWidget';
 
 function CustomerLayout() {
   return (
@@ -38,6 +39,7 @@ function CustomerLayout() {
         <Outlet />
       </main>
       <Footer />
+      <FloatingChatWidget />
     </div>
   );
 }

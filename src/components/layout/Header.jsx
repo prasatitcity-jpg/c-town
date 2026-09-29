@@ -64,8 +64,9 @@ export default function Header({ onSearch }) {
     { to: '/', label: 'หน้าแรก' },
     { to: '/products', label: 'สินค้าทั้งหมด' },
     { to: '/cart', label: 'ตะกร้าสินค้า', icon: <ShoppingBag size={16} />, badge: totalItems },
-    { to: '/promotions', label: 'โปรโมชั่น' },
     { to: '/track-order', label: 'ติดตามคำสั่งซื้อ' },
+    { to: '/chat', label: 'แชทร้านค้า', icon: <MessageCircle size={16} /> },
+    { to: '/promotions', label: 'โปรโมชั่น' },
     { to: '/contact', label: 'ติดต่อเรา' },
   ];
 
@@ -415,13 +416,13 @@ export default function Header({ onSearch }) {
           </div>
           <span>ตะกร้า</span>
         </Link>
-        <Link to={isLoggedIn ? "/orders" : "/track-order"} className={`bottom-bar-item ${location.pathname === '/orders' || location.pathname === '/track-order' ? 'active' : ''}`}>
+        <Link to="/track-order" className={`bottom-bar-item ${location.pathname === '/track-order' || location.pathname === '/orders' ? 'active' : ''}`}>
           <Package size={20} />
-          <span>ออเดอร์</span>
+          <span>ติดตาม</span>
         </Link>
-        <Link to={isLoggedIn ? "/account" : "/login"} className={`bottom-bar-item ${location.pathname === '/account' || location.pathname === '/login' ? 'active' : ''}`}>
-          <User size={20} />
-          <span>{isLoggedIn ? (user?.name?.split(' ')[0] || 'บัญชี') : 'เข้าสู่ระบบ'}</span>
+        <Link to="/chat" className={`bottom-bar-item ${location.pathname === '/chat' ? 'active' : ''}`}>
+          <MessageCircle size={20} />
+          <span>แชทร้าน</span>
         </Link>
       </nav>
     </>

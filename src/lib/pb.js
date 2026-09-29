@@ -711,9 +711,25 @@ function createUniversalCollection(collectionName) {
         }
       }
 
-      // 3. Fallback: Check existing users table or DEFAULT_DATABASE.users
+      // 3. Check persistent localStorage registered users
       let seedUser = null;
-      if (supabase) {
+      if (typeof window !== 'undefined') {
+        try {
+          const registered = JSON.parse(localStorage.getItem('ctown_registered_users') || '[]');
+          const match = registered.find(u => u.email?.toLowerCase() === cleanEmail);
+          if (match) {
+            if (match.password && match.password !== password) {
+              throw new Error('รหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบรหัสผ่านอีกครั้ง');
+            }
+            seedUser = match;
+          }
+        } catch (e) {
+          if (e.message.includes('รหัสผ่าน')) throw e;
+        }
+      }
+
+      // 4. Fallback: Check existing users table or DEFAULT_DATABASE.users
+      if (!seedUser && supabase) {
         try {
           const { data: u } = await supabase
             .from('users')
@@ -730,10 +746,15 @@ function createUniversalCollection(collectionName) {
 
       if (seedUser) {
         supabaseAuthStore.save('token_' + Date.now(), seedUser);
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem('ctown_saved_email', seedUser.email);
+          } catch (_) {}
+        }
         return { record: seedUser, token: supabaseAuthStore.token };
       }
 
-      throw new Error('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+      throw new Error('ไม่พบบัญชีผู้ใช้นี้ หรืออีเมลและรหัสผ่านไม่ถูกต้อง');
     },
 
     async authRefresh() {
@@ -792,19 +813,41 @@ export async function ctownFetch(path, options = {}) {
       }
     }
 
+    const cleanEmail = email.trim().toLowerCase();
     const userRecord = {
       id: userId,
-      email,
+      email: cleanEmail,
       name: name || 'ลูกค้า C-TOWN',
       phone: phone || '',
+      password: password,
       role: 'CUSTOMER',
       created: new Date().toISOString(),
       created_at: new Date().toISOString()
     };
 
+    if (typeof window !== 'undefined') {
+      try {
+        const storedUsers = JSON.parse(localStorage.getItem('ctown_registered_users') || '[]');
+        const existingIdx = storedUsers.findIndex(u => u.email === cleanEmail);
+        if (existingIdx !== -1) {
+          storedUsers[existingIdx] = userRecord;
+        } else {
+          storedUsers.unshift(userRecord);
+        }
+        localStorage.setItem('ctown_registered_users', JSON.stringify(storedUsers));
+        localStorage.setItem('ctown_saved_email', cleanEmail);
+      } catch (_) {}
+    }
+
     if (supabase) {
       try {
-        await supabase.from('users').upsert(userRecord);
+        await supabase.from('users').upsert({
+          id: userId,
+          email: cleanEmail,
+          name: userRecord.name,
+          phone: userRecord.phone,
+          role: 'CUSTOMER'
+        });
         await supabase.from('customer_profiles').upsert({
           id: userId,
           user: userId,
@@ -815,7 +858,9 @@ export async function ctownFetch(path, options = {}) {
     }
 
     if (DEFAULT_DATABASE.users) {
-      DEFAULT_DATABASE.users.push(userRecord);
+      const idx = DEFAULT_DATABASE.users.findIndex(u => u.email === cleanEmail);
+      if (idx !== -1) DEFAULT_DATABASE.users[idx] = userRecord;
+      else DEFAULT_DATABASE.users.push(userRecord);
     }
 
     supabaseAuthStore.save(sessionToken, userRecord);

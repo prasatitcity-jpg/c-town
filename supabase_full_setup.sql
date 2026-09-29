@@ -58,8 +58,10 @@ CREATE TABLE IF NOT EXISTS public.users (
 
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 -- Allow public read or authenticated access (adjust policies as needed):
-CREATE POLICY IF NOT EXISTS "Allow all read on users" ON public.users FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Allow authenticated full access on users" ON public.users FOR ALL TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow all read on users" ON public.users;
+CREATE POLICY "Allow all read on users" ON public.users FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow authenticated full access on users" ON public.users;
+CREATE POLICY "Allow authenticated full access on users" ON public.users FOR ALL TO authenticated USING (true);
 
 -- Table: public.customer_profiles
 CREATE TABLE IF NOT EXISTS public.customer_profiles (
@@ -77,8 +79,10 @@ CREATE TABLE IF NOT EXISTS public.customer_profiles (
 CREATE INDEX IF NOT EXISTS idx_customer_profiles_user ON public.customer_profiles ("user");
 ALTER TABLE public.customer_profiles ENABLE ROW LEVEL SECURITY;
 -- Allow public read or authenticated access (adjust policies as needed):
-CREATE POLICY IF NOT EXISTS "Allow all read on customer_profiles" ON public.customer_profiles FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Allow authenticated full access on customer_profiles" ON public.customer_profiles FOR ALL TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow all read on customer_profiles" ON public.customer_profiles;
+CREATE POLICY "Allow all read on customer_profiles" ON public.customer_profiles FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow authenticated full access on customer_profiles" ON public.customer_profiles;
+CREATE POLICY "Allow authenticated full access on customer_profiles" ON public.customer_profiles FOR ALL TO authenticated USING (true);
 
 -- Table: public.admin_profiles
 CREATE TABLE IF NOT EXISTS public.admin_profiles (
@@ -94,8 +98,10 @@ CREATE TABLE IF NOT EXISTS public.admin_profiles (
 CREATE INDEX IF NOT EXISTS idx_admin_profiles_user ON public.admin_profiles ("user");
 ALTER TABLE public.admin_profiles ENABLE ROW LEVEL SECURITY;
 -- Allow public read or authenticated access (adjust policies as needed):
-CREATE POLICY IF NOT EXISTS "Allow all read on admin_profiles" ON public.admin_profiles FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Allow authenticated full access on admin_profiles" ON public.admin_profiles FOR ALL TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow all read on admin_profiles" ON public.admin_profiles;
+CREATE POLICY "Allow all read on admin_profiles" ON public.admin_profiles FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow authenticated full access on admin_profiles" ON public.admin_profiles;
+CREATE POLICY "Allow authenticated full access on admin_profiles" ON public.admin_profiles FOR ALL TO authenticated USING (true);
 
 -- Table: public.addresses
 CREATE TABLE IF NOT EXISTS public.addresses (
@@ -116,8 +122,10 @@ CREATE TABLE IF NOT EXISTS public.addresses (
 CREATE INDEX IF NOT EXISTS idx_addresses_user ON public.addresses ("user");
 ALTER TABLE public.addresses ENABLE ROW LEVEL SECURITY;
 -- Allow public read or authenticated access (adjust policies as needed):
-CREATE POLICY IF NOT EXISTS "Allow all read on addresses" ON public.addresses FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Allow authenticated full access on addresses" ON public.addresses FOR ALL TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow all read on addresses" ON public.addresses;
+CREATE POLICY "Allow all read on addresses" ON public.addresses FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow authenticated full access on addresses" ON public.addresses;
+CREATE POLICY "Allow authenticated full access on addresses" ON public.addresses FOR ALL TO authenticated USING (true);
 
 -- Table: public.suppliers
 CREATE TABLE IF NOT EXISTS public.suppliers (
@@ -136,8 +144,10 @@ CREATE TABLE IF NOT EXISTS public.suppliers (
 
 ALTER TABLE public.suppliers ENABLE ROW LEVEL SECURITY;
 -- Allow public read or authenticated access (adjust policies as needed):
-CREATE POLICY IF NOT EXISTS "Allow all read on suppliers" ON public.suppliers FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Allow authenticated full access on suppliers" ON public.suppliers FOR ALL TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow all read on suppliers" ON public.suppliers;
+CREATE POLICY "Allow all read on suppliers" ON public.suppliers FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow authenticated full access on suppliers" ON public.suppliers;
+CREATE POLICY "Allow authenticated full access on suppliers" ON public.suppliers FOR ALL TO authenticated USING (true);
 
 -- Table: public.brands
 CREATE TABLE IF NOT EXISTS public.brands (
@@ -154,8 +164,10 @@ CREATE TABLE IF NOT EXISTS public.brands (
 CREATE INDEX IF NOT EXISTS idx_brands_slug ON public.brands ("slug");
 ALTER TABLE public.brands ENABLE ROW LEVEL SECURITY;
 -- Allow public read or authenticated access (adjust policies as needed):
-CREATE POLICY IF NOT EXISTS "Allow all read on brands" ON public.brands FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Allow authenticated full access on brands" ON public.brands FOR ALL TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow all read on brands" ON public.brands;
+CREATE POLICY "Allow all read on brands" ON public.brands FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow authenticated full access on brands" ON public.brands;
+CREATE POLICY "Allow authenticated full access on brands" ON public.brands FOR ALL TO authenticated USING (true);
 
 -- Table: public.categories
 CREATE TABLE IF NOT EXISTS public.categories (
@@ -172,8 +184,10 @@ CREATE TABLE IF NOT EXISTS public.categories (
 CREATE INDEX IF NOT EXISTS idx_categories_slug ON public.categories ("slug");
 ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
 -- Allow public read or authenticated access (adjust policies as needed):
-CREATE POLICY IF NOT EXISTS "Allow all read on categories" ON public.categories FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Allow authenticated full access on categories" ON public.categories FOR ALL TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow all read on categories" ON public.categories;
+CREATE POLICY "Allow all read on categories" ON public.categories FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow authenticated full access on categories" ON public.categories;
+CREATE POLICY "Allow authenticated full access on categories" ON public.categories FOR ALL TO authenticated USING (true);
 
 -- Table: public.products
 CREATE TABLE IF NOT EXISTS public.products (
@@ -197,8 +211,10 @@ CREATE INDEX IF NOT EXISTS idx_products_slug ON public.products ("slug");
 CREATE INDEX IF NOT EXISTS idx_products_status ON public.products ("status");
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 -- Allow public read or authenticated access (adjust policies as needed):
-CREATE POLICY IF NOT EXISTS "Allow all read on products" ON public.products FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Allow authenticated full access on products" ON public.products FOR ALL TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow all read on products" ON public.products;
+CREATE POLICY "Allow all read on products" ON public.products FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow authenticated full access on products" ON public.products;
+CREATE POLICY "Allow authenticated full access on products" ON public.products FOR ALL TO authenticated USING (true);
 
 -- Table: public.product_variants
 CREATE TABLE IF NOT EXISTS public.product_variants (
@@ -226,8 +242,10 @@ CREATE INDEX IF NOT EXISTS idx_product_variants_sku ON public.product_variants (
 CREATE INDEX IF NOT EXISTS idx_product_variants_status ON public.product_variants ("status");
 ALTER TABLE public.product_variants ENABLE ROW LEVEL SECURITY;
 -- Allow public read or authenticated access (adjust policies as needed):
-CREATE POLICY IF NOT EXISTS "Allow all read on product_variants" ON public.product_variants FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Allow authenticated full access on product_variants" ON public.product_variants FOR ALL TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow all read on product_variants" ON public.product_variants;
+CREATE POLICY "Allow all read on product_variants" ON public.product_variants FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow authenticated full access on product_variants" ON public.product_variants;
+CREATE POLICY "Allow authenticated full access on product_variants" ON public.product_variants FOR ALL TO authenticated USING (true);
 
 -- Table: public.product_images
 CREATE TABLE IF NOT EXISTS public.product_images (
@@ -245,8 +263,10 @@ CREATE INDEX IF NOT EXISTS idx_product_images_product ON public.product_images (
 CREATE INDEX IF NOT EXISTS idx_product_images_variant ON public.product_images ("variant");
 ALTER TABLE public.product_images ENABLE ROW LEVEL SECURITY;
 -- Allow public read or authenticated access (adjust policies as needed):
-CREATE POLICY IF NOT EXISTS "Allow all read on product_images" ON public.product_images FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Allow authenticated full access on product_images" ON public.product_images FOR ALL TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow all read on product_images" ON public.product_images;
+CREATE POLICY "Allow all read on product_images" ON public.product_images FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow authenticated full access on product_images" ON public.product_images;
+CREATE POLICY "Allow authenticated full access on product_images" ON public.product_images FOR ALL TO authenticated USING (true);
 
 -- Table: public.coupons
 CREATE TABLE IF NOT EXISTS public.coupons (
@@ -269,8 +289,10 @@ CREATE TABLE IF NOT EXISTS public.coupons (
 CREATE INDEX IF NOT EXISTS idx_coupons_status ON public.coupons ("status");
 ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
 -- Allow public read or authenticated access (adjust policies as needed):
-CREATE POLICY IF NOT EXISTS "Allow all read on coupons" ON public.coupons FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Allow authenticated full access on coupons" ON public.coupons FOR ALL TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow all read on coupons" ON public.coupons;
+CREATE POLICY "Allow all read on coupons" ON public.coupons FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow authenticated full access on coupons" ON public.coupons;
+CREATE POLICY "Allow authenticated full access on coupons" ON public.coupons FOR ALL TO authenticated USING (true);
 
 -- Table: public.coupon_usages
 CREATE TABLE IF NOT EXISTS public.coupon_usages (
@@ -287,8 +309,10 @@ CREATE TABLE IF NOT EXISTS public.coupon_usages (
 CREATE INDEX IF NOT EXISTS idx_coupon_usages_user ON public.coupon_usages ("user");
 ALTER TABLE public.coupon_usages ENABLE ROW LEVEL SECURITY;
 -- Allow public read or authenticated access (adjust policies as needed):
-CREATE POLICY IF NOT EXISTS "Allow all read on coupon_usages" ON public.coupon_usages FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Allow authenticated full access on coupon_usages" ON public.coupon_usages FOR ALL TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow all read on coupon_usages" ON public.coupon_usages;
+CREATE POLICY "Allow all read on coupon_usages" ON public.coupon_usages FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow authenticated full access on coupon_usages" ON public.coupon_usages;
+CREATE POLICY "Allow authenticated full access on coupon_usages" ON public.coupon_usages FOR ALL TO authenticated USING (true);
 
 -- Table: public.carts
 CREATE TABLE IF NOT EXISTS public.carts (
@@ -303,8 +327,10 @@ CREATE INDEX IF NOT EXISTS idx_carts_user ON public.carts ("user");
 CREATE INDEX IF NOT EXISTS idx_carts_status ON public.carts ("status");
 ALTER TABLE public.carts ENABLE ROW LEVEL SECURITY;
 -- Allow public read or authenticated access (adjust policies as needed):
-CREATE POLICY IF NOT EXISTS "Allow all read on carts" ON public.carts FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Allow authenticated full access on carts" ON public.carts FOR ALL TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow all read on carts" ON public.carts;
+CREATE POLICY "Allow all read on carts" ON public.carts FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow authenticated full access on carts" ON public.carts;
+CREATE POLICY "Allow authenticated full access on carts" ON public.carts FOR ALL TO authenticated USING (true);
 
 -- Table: public.cart_items
 CREATE TABLE IF NOT EXISTS public.cart_items (
@@ -324,8 +350,10 @@ CREATE INDEX IF NOT EXISTS idx_cart_items_product ON public.cart_items ("product
 CREATE INDEX IF NOT EXISTS idx_cart_items_variant ON public.cart_items ("variant");
 ALTER TABLE public.cart_items ENABLE ROW LEVEL SECURITY;
 -- Allow public read or authenticated access (adjust policies as needed):
-CREATE POLICY IF NOT EXISTS "Allow all read on cart_items" ON public.cart_items FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Allow authenticated full access on cart_items" ON public.cart_items FOR ALL TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow all read on cart_items" ON public.cart_items;
+CREATE POLICY "Allow all read on cart_items" ON public.cart_items FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow authenticated full access on cart_items" ON public.cart_items;
+CREATE POLICY "Allow authenticated full access on cart_items" ON public.cart_items FOR ALL TO authenticated USING (true);
 
 -- Table: public.orders
 CREATE TABLE IF NOT EXISTS public.orders (
@@ -352,8 +380,10 @@ CREATE TABLE IF NOT EXISTS public.orders (
 CREATE INDEX IF NOT EXISTS idx_orders_user ON public.orders ("user");
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 -- Allow public read or authenticated access (adjust policies as needed):
-CREATE POLICY IF NOT EXISTS "Allow all read on orders" ON public.orders FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Allow authenticated full access on orders" ON public.orders FOR ALL TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow all read on orders" ON public.orders;
+CREATE POLICY "Allow all read on orders" ON public.orders FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow authenticated full access on orders" ON public.orders;
+CREATE POLICY "Allow authenticated full access on orders" ON public.orders FOR ALL TO authenticated USING (true);
 
 -- Table: public.order_items
 CREATE TABLE IF NOT EXISTS public.order_items (
@@ -378,8 +408,10 @@ CREATE INDEX IF NOT EXISTS idx_order_items_order ON public.order_items ("order")
 CREATE INDEX IF NOT EXISTS idx_order_items_sku ON public.order_items ("sku");
 ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
 -- Allow public read or authenticated access (adjust policies as needed):
-CREATE POLICY IF NOT EXISTS "Allow all read on order_items" ON public.order_items FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Allow authenticated full access on order_items" ON public.order_items FOR ALL TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow all read on order_items" ON public.order_items;
+CREATE POLICY "Allow all read on order_items" ON public.order_items FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow authenticated full access on order_items" ON public.order_items;
+CREATE POLICY "Allow authenticated full access on order_items" ON public.order_items FOR ALL TO authenticated USING (true);
 
 -- Table: public.payments
 CREATE TABLE IF NOT EXISTS public.payments (
@@ -399,8 +431,10 @@ CREATE INDEX IF NOT EXISTS idx_payments_order ON public.payments ("order");
 CREATE INDEX IF NOT EXISTS idx_payments_status ON public.payments ("status");
 ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
 -- Allow public read or authenticated access (adjust policies as needed):
-CREATE POLICY IF NOT EXISTS "Allow all read on payments" ON public.payments FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Allow authenticated full access on payments" ON public.payments FOR ALL TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow all read on payments" ON public.payments;
+CREATE POLICY "Allow all read on payments" ON public.payments FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow authenticated full access on payments" ON public.payments;
+CREATE POLICY "Allow authenticated full access on payments" ON public.payments FOR ALL TO authenticated USING (true);
 
 -- Table: public.payment_proofs
 CREATE TABLE IF NOT EXISTS public.payment_proofs (
@@ -424,8 +458,10 @@ CREATE INDEX IF NOT EXISTS idx_payment_proofs_order ON public.payment_proofs ("o
 CREATE INDEX IF NOT EXISTS idx_payment_proofs_status ON public.payment_proofs ("status");
 ALTER TABLE public.payment_proofs ENABLE ROW LEVEL SECURITY;
 -- Allow public read or authenticated access (adjust policies as needed):
-CREATE POLICY IF NOT EXISTS "Allow all read on payment_proofs" ON public.payment_proofs FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Allow authenticated full access on payment_proofs" ON public.payment_proofs FOR ALL TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow all read on payment_proofs" ON public.payment_proofs;
+CREATE POLICY "Allow all read on payment_proofs" ON public.payment_proofs FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow authenticated full access on payment_proofs" ON public.payment_proofs;
+CREATE POLICY "Allow authenticated full access on payment_proofs" ON public.payment_proofs FOR ALL TO authenticated USING (true);
 
 -- Table: public.shipments
 CREATE TABLE IF NOT EXISTS public.shipments (
@@ -445,8 +481,10 @@ CREATE INDEX IF NOT EXISTS idx_shipments_order ON public.shipments ("order");
 CREATE INDEX IF NOT EXISTS idx_shipments_status ON public.shipments ("status");
 ALTER TABLE public.shipments ENABLE ROW LEVEL SECURITY;
 -- Allow public read or authenticated access (adjust policies as needed):
-CREATE POLICY IF NOT EXISTS "Allow all read on shipments" ON public.shipments FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Allow authenticated full access on shipments" ON public.shipments FOR ALL TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow all read on shipments" ON public.shipments;
+CREATE POLICY "Allow all read on shipments" ON public.shipments FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow authenticated full access on shipments" ON public.shipments;
+CREATE POLICY "Allow authenticated full access on shipments" ON public.shipments FOR ALL TO authenticated USING (true);
 
 -- Table: public.shipment_events
 CREATE TABLE IF NOT EXISTS public.shipment_events (
@@ -465,8 +503,10 @@ CREATE INDEX IF NOT EXISTS idx_shipment_events_order ON public.shipment_events (
 CREATE INDEX IF NOT EXISTS idx_shipment_events_status ON public.shipment_events ("status");
 ALTER TABLE public.shipment_events ENABLE ROW LEVEL SECURITY;
 -- Allow public read or authenticated access (adjust policies as needed):
-CREATE POLICY IF NOT EXISTS "Allow all read on shipment_events" ON public.shipment_events FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Allow authenticated full access on shipment_events" ON public.shipment_events FOR ALL TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow all read on shipment_events" ON public.shipment_events;
+CREATE POLICY "Allow all read on shipment_events" ON public.shipment_events FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow authenticated full access on shipment_events" ON public.shipment_events;
+CREATE POLICY "Allow authenticated full access on shipment_events" ON public.shipment_events FOR ALL TO authenticated USING (true);
 
 -- Table: public.stock_movements
 CREATE TABLE IF NOT EXISTS public.stock_movements (
@@ -490,8 +530,10 @@ CREATE INDEX IF NOT EXISTS idx_stock_movements_variant ON public.stock_movements
 CREATE INDEX IF NOT EXISTS idx_stock_movements_sku ON public.stock_movements ("sku");
 ALTER TABLE public.stock_movements ENABLE ROW LEVEL SECURITY;
 -- Allow public read or authenticated access (adjust policies as needed):
-CREATE POLICY IF NOT EXISTS "Allow all read on stock_movements" ON public.stock_movements FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Allow authenticated full access on stock_movements" ON public.stock_movements FOR ALL TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow all read on stock_movements" ON public.stock_movements;
+CREATE POLICY "Allow all read on stock_movements" ON public.stock_movements FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow authenticated full access on stock_movements" ON public.stock_movements;
+CREATE POLICY "Allow authenticated full access on stock_movements" ON public.stock_movements FOR ALL TO authenticated USING (true);
 
 -- Table: public.purchase_orders
 CREATE TABLE IF NOT EXISTS public.purchase_orders (
@@ -510,8 +552,10 @@ CREATE TABLE IF NOT EXISTS public.purchase_orders (
 CREATE INDEX IF NOT EXISTS idx_purchase_orders_status ON public.purchase_orders ("status");
 ALTER TABLE public.purchase_orders ENABLE ROW LEVEL SECURITY;
 -- Allow public read or authenticated access (adjust policies as needed):
-CREATE POLICY IF NOT EXISTS "Allow all read on purchase_orders" ON public.purchase_orders FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Allow authenticated full access on purchase_orders" ON public.purchase_orders FOR ALL TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow all read on purchase_orders" ON public.purchase_orders;
+CREATE POLICY "Allow all read on purchase_orders" ON public.purchase_orders FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow authenticated full access on purchase_orders" ON public.purchase_orders;
+CREATE POLICY "Allow authenticated full access on purchase_orders" ON public.purchase_orders FOR ALL TO authenticated USING (true);
 
 -- Table: public.purchase_order_items
 CREATE TABLE IF NOT EXISTS public.purchase_order_items (
@@ -529,8 +573,10 @@ CREATE TABLE IF NOT EXISTS public.purchase_order_items (
 CREATE INDEX IF NOT EXISTS idx_purchase_order_items_variant ON public.purchase_order_items ("variant");
 ALTER TABLE public.purchase_order_items ENABLE ROW LEVEL SECURITY;
 -- Allow public read or authenticated access (adjust policies as needed):
-CREATE POLICY IF NOT EXISTS "Allow all read on purchase_order_items" ON public.purchase_order_items FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Allow authenticated full access on purchase_order_items" ON public.purchase_order_items FOR ALL TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow all read on purchase_order_items" ON public.purchase_order_items;
+CREATE POLICY "Allow all read on purchase_order_items" ON public.purchase_order_items FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow authenticated full access on purchase_order_items" ON public.purchase_order_items;
+CREATE POLICY "Allow authenticated full access on purchase_order_items" ON public.purchase_order_items FOR ALL TO authenticated USING (true);
 
 -- Table: public.conversations
 CREATE TABLE IF NOT EXISTS public.conversations (
@@ -550,8 +596,10 @@ CREATE INDEX IF NOT EXISTS idx_conversations_user ON public.conversations ("user
 CREATE INDEX IF NOT EXISTS idx_conversations_status ON public.conversations ("status");
 ALTER TABLE public.conversations ENABLE ROW LEVEL SECURITY;
 -- Allow public read or authenticated access (adjust policies as needed):
-CREATE POLICY IF NOT EXISTS "Allow all read on conversations" ON public.conversations FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Allow authenticated full access on conversations" ON public.conversations FOR ALL TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow all read on conversations" ON public.conversations;
+CREATE POLICY "Allow all read on conversations" ON public.conversations FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow authenticated full access on conversations" ON public.conversations;
+CREATE POLICY "Allow authenticated full access on conversations" ON public.conversations FOR ALL TO authenticated USING (true);
 
 -- Table: public.messages
 CREATE TABLE IF NOT EXISTS public.messages (
@@ -569,8 +617,10 @@ CREATE TABLE IF NOT EXISTS public.messages (
 
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 -- Allow public read or authenticated access (adjust policies as needed):
-CREATE POLICY IF NOT EXISTS "Allow all read on messages" ON public.messages FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Allow authenticated full access on messages" ON public.messages FOR ALL TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow all read on messages" ON public.messages;
+CREATE POLICY "Allow all read on messages" ON public.messages FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow authenticated full access on messages" ON public.messages;
+CREATE POLICY "Allow authenticated full access on messages" ON public.messages FOR ALL TO authenticated USING (true);
 
 -- Table: public.store_settings
 CREATE TABLE IF NOT EXISTS public.store_settings (
@@ -603,8 +653,10 @@ CREATE TABLE IF NOT EXISTS public.store_settings (
 
 ALTER TABLE public.store_settings ENABLE ROW LEVEL SECURITY;
 -- Allow public read or authenticated access (adjust policies as needed):
-CREATE POLICY IF NOT EXISTS "Allow all read on store_settings" ON public.store_settings FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Allow authenticated full access on store_settings" ON public.store_settings FOR ALL TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow all read on store_settings" ON public.store_settings;
+CREATE POLICY "Allow all read on store_settings" ON public.store_settings FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow authenticated full access on store_settings" ON public.store_settings;
+CREATE POLICY "Allow authenticated full access on store_settings" ON public.store_settings FOR ALL TO authenticated USING (true);
 
 -- Table: public.audit_logs
 CREATE TABLE IF NOT EXISTS public.audit_logs (
@@ -623,8 +675,10 @@ CREATE TABLE IF NOT EXISTS public.audit_logs (
 
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 -- Allow public read or authenticated access (adjust policies as needed):
-CREATE POLICY IF NOT EXISTS "Allow all read on audit_logs" ON public.audit_logs FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Allow authenticated full access on audit_logs" ON public.audit_logs FOR ALL TO authenticated USING (true);
+DROP POLICY IF EXISTS "Allow all read on audit_logs" ON public.audit_logs;
+CREATE POLICY "Allow all read on audit_logs" ON public.audit_logs FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow authenticated full access on audit_logs" ON public.audit_logs;
+CREATE POLICY "Allow authenticated full access on audit_logs" ON public.audit_logs FOR ALL TO authenticated USING (true);
 
 
 

@@ -856,21 +856,23 @@ export async function ctownFetch(path, options = {}) {
         DEFAULT_DATABASE.orders.unshift(newOrder);
       }
 
-      // Insert order items
+      // Insert order items & reduce stock
       for (const it of items) {
         const itemId = 'oi_' + Math.random().toString(36).slice(2, 10);
+        const vId = it.variant_id || it.variant;
+        const pQty = Number(it.quantity) || 1;
         const orderItemRec = {
           id: itemId,
           order: orderId,
-          variant: it.variant_id || it.variant,
+          variant: vId,
           product_id: it.product_id || it.product,
           product_name_snapshot: it.product_name || 'Sneaker',
           sku: it.sku || 'SKU',
           color: it.color || '',
           size: String(it.size || ''),
-          quantity: it.quantity || 1,
+          quantity: pQty,
           unit_price: it.unit_price || 0,
-          line_total: (it.quantity || 1) * (it.unit_price || 0),
+          line_total: pQty * (it.unit_price || 0),
           image_snapshot: it.image || ''
         };
 
@@ -881,6 +883,45 @@ export async function ctownFetch(path, options = {}) {
         if (DEFAULT_DATABASE.order_items) {
           DEFAULT_DATABASE.order_items.push(orderItemRec);
         }
+
+        // Deduct stock in in-memory database
+        let vr = DEFAULT_DATABASE.product_variants?.find(v => v.id === vId);
+        if (vr) {
+          vr.stock_quantity = Math.max(0, (vr.stock_quantity || 0) - pQty);
+          if (typeof vr.stock === 'number') vr.stock = vr.stock_quantity;
+        }
+
+        // Deduct stock in Supabase if active
+        try {
+          const { data } = await supabase.from('product_variants').select('stock_quantity, stock').eq('id', vId).single();
+          if (data) {
+            const currentStock = typeof data.stock_quantity === 'number' ? data.stock_quantity : (data.stock || 0);
+            const newStock = Math.max(0, currentStock - pQty);
+            await supabase.from('product_variants').update({ stock_quantity: newStock, stock: newStock }).eq('id', vId);
+          }
+        } catch (_) {}
+
+        // Add audit trail to stock movements
+        const saleMovement = {
+          id: 'sm_' + Math.random().toString(36).slice(2, 10),
+          variant: vId,
+          product: it.product_id || it.product || vr?.product || '',
+          sku: it.sku || vr?.sku || 'SKU',
+          movement_type: 'sale',
+          quantity: pQty,
+          reference_number: orderNumber,
+          note: `ขายสินค้าผ่านคำสั่งซื้อ ${orderNumber}`,
+          created: new Date().toISOString(),
+          created_at: new Date().toISOString()
+        };
+
+        if (DEFAULT_DATABASE.stock_movements) {
+          DEFAULT_DATABASE.stock_movements.unshift(saleMovement);
+        }
+
+        try {
+          await supabase.from('stock_movements').insert(saleMovement);
+        } catch (_) {}
       }
 
       return { success: true, order: newOrder };

@@ -36,6 +36,10 @@ export default function ProductCard({ product, variants: propVariants = [] }) {
     }
   }
 
+  // Unique sizes
+  const uniqueSizes = [...new Set(variants.map(v => v.size).filter(Boolean))]
+    .sort((a, b) => (parseFloat(a) || 0) - (parseFloat(b) || 0));
+
   const firstVariant = variants[0];
   const displayImage = getProductImageUrl(firstVariant);
 
@@ -128,6 +132,21 @@ export default function ProductCard({ product, variants: propVariants = [] }) {
             </div>
           )}
 
+          {/* Unique sizes */}
+          {uniqueSizes.length > 0 && (
+            <div className="product-card-sizes" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '6px', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.72rem', color: '#6B7280', fontWeight: '600' }}>ไซซ์:</span>
+              {uniqueSizes.slice(0, 6).map(s => (
+                <span key={s} style={{ fontSize: '0.7rem', padding: '1px 5px', borderRadius: '4px', background: '#F3F4F6', color: '#374151', border: '1px solid #E5E7EB' }}>
+                  {s}
+                </span>
+              ))}
+              {uniqueSizes.length > 6 && (
+                <span style={{ fontSize: '0.7rem', color: '#9CA3AF' }}>+{uniqueSizes.length - 6}</span>
+              )}
+            </div>
+          )}
+
           {/* Price display with explicit label */}
           <div className="product-card-price-row">
             <div className="product-card-price">
@@ -157,6 +176,34 @@ export default function ProductCard({ product, variants: propVariants = [] }) {
                 <span className="stock-dot red" /> สินค้าหมดชั่วคราว
               </span>
             )}
+          </div>
+
+          {/* Direct Add to Cart Button */}
+          <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #F3F4F6' }}>
+            <button
+              type="button"
+              onClick={handleQuickAdd}
+              disabled={addingToCart || (!inStock && variants.length > 0)}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                fontSize: '0.85rem',
+                fontWeight: '600',
+                cursor: (!inStock && variants.length > 0) ? 'not-allowed' : 'pointer',
+                backgroundColor: (!inStock && variants.length > 0) ? '#E5E7EB' : 'var(--primary-pink, #FF4B82)',
+                color: (!inStock && variants.length > 0) ? '#9CA3AF' : '#fff',
+                border: 'none',
+                transition: 'all 0.2s'
+              }}
+            >
+              <ShoppingBag size={15} />
+              {addingToCart ? 'กำลังเพิ่ม...' : (!inStock && variants.length > 0) ? 'สินค้าหมด' : 'เพิ่มลงตะกร้า'}
+            </button>
           </div>
         </div>
       </Link>

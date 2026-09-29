@@ -45,6 +45,7 @@ export default function AdminLayout() {
     { to: '/admin/stock', label: 'ประวัติเคลื่อนไหวสต็อก (Ledger)', icon: <Layers size={20} /> },
     { to: '/admin/coupons', label: 'คูปองและโปรโมชั่น', icon: <Tag size={20} /> },
     { to: '/admin/chat', label: 'ศูนย์ตอบแชตลูกค้า', icon: <MessageSquare size={20} /> },
+    { to: '/cart', label: 'ตะกร้าสินค้าหน้าร้าน', icon: <ShoppingBag size={20} /> },
   ];
 
   return (

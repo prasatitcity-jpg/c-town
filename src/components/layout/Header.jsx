@@ -58,12 +58,24 @@ export default function Header({ onSearch }) {
     }
   };
 
+  const [adminDropdownOpen, setAdminDropdownOpen] = useState(false);
+
   const navLinks = [
     { to: '/', label: 'หน้าแรก' },
     { to: '/products', label: 'สินค้าทั้งหมด' },
+    { to: '/cart', label: 'ตะกร้าสินค้าหน้าร้าน', icon: <ShoppingBag size={16} />, badge: totalItems },
     { to: '/promotions', label: 'โปรโมชั่น' },
     { to: '/track-order', label: 'ติดตามคำสั่งซื้อ' },
-    { to: '/contact', label: 'ติดต่อร้าน' },
+  ];
+
+  const adminNavItems = [
+    { to: '/admin', label: 'แดชบอร์ดสรุปผล', icon: '📊' },
+    { to: '/admin/orders', label: 'จัดการคำสั่งซื้อและสลิป', icon: '📦' },
+    { to: '/admin/products', label: 'สินค้าและสต็อก', icon: '👟' },
+    { to: '/admin/stock', label: 'ประวัติเคลื่อนไหวสต็อก', icon: '📈' },
+    { to: '/admin/coupons', label: 'คูปองและโปรโมชั่น', icon: '🏷️' },
+    { to: '/admin/chat', label: 'ศูนย์ตอบแชทลูกค้า', icon: '💬' },
+    { to: '/cart', label: 'ตะกร้าสินค้าหน้าร้าน', icon: '🛒' },
   ];
 
   return (
@@ -100,9 +112,77 @@ export default function Header({ onSearch }) {
                 to={link.to}
                 className={`nav-link${location.pathname === link.to ? ' active' : ''}`}
               >
-                {link.label}
+                {link.icon && <span className="nav-icon-inline" style={{ marginRight: '6px', display: 'inline-flex', verticalAlign: 'middle' }}>{link.icon}</span>}
+                <span>{link.label}</span>
+                {link.badge > 0 && <span className="nav-badge-pill" style={{ marginLeft: '6px', background: '#EF4444', color: '#fff', fontSize: '11px', padding: '2px 7px', borderRadius: '10px', fontWeight: 'bold' }}>{link.badge}</span>}
               </Link>
             ))}
+
+            {/* Admin Management Dropdown */}
+            <div className="nav-dropdown-wrapper" style={{ position: 'relative' }} onMouseLeave={() => setAdminDropdownOpen(false)}>
+              <button
+                type="button"
+                className={`nav-link admin-nav-toggle-btn${location.pathname.startsWith('/admin') ? ' active' : ''}`}
+                onClick={() => setAdminDropdownOpen(!adminDropdownOpen)}
+                id="btn-nav-admin-dropdown"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', cursor: 'pointer', background: 'transparent', border: 'none', font: 'inherit', color: 'inherit' }}
+              >
+                <span>⚙️ ระบบจัดการร้าน</span>
+                <ChevronDown size={14} style={{ transform: adminDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+              </button>
+
+              {adminDropdownOpen && (
+                <div
+                  className="nav-admin-dropdown-menu"
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    minWidth: '240px',
+                    background: '#ffffff',
+                    borderRadius: '12px',
+                    boxShadow: '0 12px 30px rgba(0,0,0,0.15)',
+                    padding: '8px 0',
+                    zIndex: 1000,
+                    border: '1px solid #f1f5f9',
+                  }}
+                >
+                  <div style={{ padding: '8px 16px 6px', fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    เมนูระบบจัดการ & หลังบ้าน
+                  </div>
+                  {adminNavItems.map(item => (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        padding: '10px 16px',
+                        color: location.pathname === item.to ? '#ec4899' : '#334155',
+                        fontWeight: location.pathname === item.to ? 600 : 500,
+                        textDecoration: 'none',
+                        fontSize: '14px',
+                        transition: 'background 0.15s',
+                        background: location.pathname === item.to ? '#fdf2f8' : 'transparent',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = location.pathname === item.to ? '#fdf2f8' : 'transparent'; }}
+                      onClick={(e) => {
+                        setAdminDropdownOpen(false);
+                        if (item.to.startsWith('/admin') && !isAdmin) {
+                          e.preventDefault();
+                          setPinModalOpen(true);
+                        }
+                      }}
+                    >
+                      <span style={{ fontSize: '16px' }}>{item.icon}</span>
+                      <span>{item.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
           </nav>
 
           {/* Right Corner: Search, Cart, Login / Account */}
@@ -264,33 +344,49 @@ export default function Header({ onSearch }) {
               </div>
 
               <div className="mobile-links-list">
+                <div style={{ padding: '6px 16px', fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>หน้าร้านค้า</div>
                 {navLinks.map(link => (
                   <Link
                     key={link.to}
                     to={link.to}
                     className={`mobile-nav-link ${location.pathname === link.to ? 'active' : ''}`}
                     onClick={() => setMobileOpen(false)}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
                   >
-                    {link.label}
+                    <span>{link.label}</span>
+                    {link.badge > 0 && <span style={{ background: '#EF4444', color: '#fff', fontSize: '11px', padding: '2px 7px', borderRadius: '10px', fontWeight: 'bold' }}>{link.badge}</span>}
+                  </Link>
+                ))}
+
+                <div style={{ padding: '12px 16px 6px', fontSize: '11px', fontWeight: 700, color: '#ec4899', textTransform: 'uppercase' }}>ระบบจัดการร้าน & หลังบ้าน</div>
+                {adminNavItems.map(item => (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className={`mobile-nav-link ${location.pathname === item.to ? 'active' : ''}`}
+                    onClick={(e) => {
+                      setMobileOpen(false);
+                      if (item.to.startsWith('/admin') && !isAdmin) {
+                        e.preventDefault();
+                        setPinModalOpen(true);
+                      }
+                    }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    <span>{item.icon}</span>
+                    <span>{item.label}</span>
                   </Link>
                 ))}
 
                 {isLoggedIn && (
                   <>
+                    <div style={{ padding: '12px 16px 6px', fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>บัญชีของฉัน</div>
                     <Link to="/account" className="mobile-nav-link" onClick={() => setMobileOpen(false)}>
                       ข้อมูลบัญชีของฉัน
                     </Link>
                     <Link to="/orders" className="mobile-nav-link" onClick={() => setMobileOpen(false)}>
                       คำสั่งซื้อของฉัน
                     </Link>
-                    <Link to="/chat" className="mobile-nav-link" onClick={() => setMobileOpen(false)}>
-                      พูดคุยกับทางร้าน
-                    </Link>
-                    {isAdmin && (
-                      <Link to="/admin" className="mobile-nav-link admin-link" onClick={() => setMobileOpen(false)}>
-                        ⚙️ Admin Dashboard
-                      </Link>
-                    )}
                     <button
                       type="button"
                       className="mobile-nav-link logout-btn"

@@ -1,0 +1,859 @@
+-- =====================================================================
+-- C-TOWN SNEAKER STORE - SUPABASE DATABASE SCHEMA
+-- Generated for Supabase (PostgreSQL 15+)
+-- Compatible with PocketBase IDs (15-character string keys)
+-- =====================================================================
+
+-- 0. Enable UUID and pgcrypto extensions (standard on Supabase)
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+-- Drop existing tables if needed (uncomment if you want a clean reset):
+/*
+DROP TABLE IF EXISTS public.audit_logs CASCADE;
+DROP TABLE IF EXISTS public.store_settings CASCADE;
+DROP TABLE IF EXISTS public.messages CASCADE;
+DROP TABLE IF EXISTS public.conversations CASCADE;
+DROP TABLE IF EXISTS public.purchase_order_items CASCADE;
+DROP TABLE IF EXISTS public.purchase_orders CASCADE;
+DROP TABLE IF EXISTS public.stock_movements CASCADE;
+DROP TABLE IF EXISTS public.shipment_events CASCADE;
+DROP TABLE IF EXISTS public.shipments CASCADE;
+DROP TABLE IF EXISTS public.payment_proofs CASCADE;
+DROP TABLE IF EXISTS public.payments CASCADE;
+DROP TABLE IF EXISTS public.order_items CASCADE;
+DROP TABLE IF EXISTS public.orders CASCADE;
+DROP TABLE IF EXISTS public.cart_items CASCADE;
+DROP TABLE IF EXISTS public.carts CASCADE;
+DROP TABLE IF EXISTS public.coupon_usages CASCADE;
+DROP TABLE IF EXISTS public.coupons CASCADE;
+DROP TABLE IF EXISTS public.product_images CASCADE;
+DROP TABLE IF EXISTS public.product_variants CASCADE;
+DROP TABLE IF EXISTS public.products CASCADE;
+DROP TABLE IF EXISTS public.categories CASCADE;
+DROP TABLE IF EXISTS public.brands CASCADE;
+DROP TABLE IF EXISTS public.suppliers CASCADE;
+DROP TABLE IF EXISTS public.addresses CASCADE;
+DROP TABLE IF EXISTS public.admin_profiles CASCADE;
+DROP TABLE IF EXISTS public.customer_profiles CASCADE;
+DROP TABLE IF EXISTS public.users CASCADE;
+*/
+
+-- Table: public.users
+CREATE TABLE IF NOT EXISTS public.users (
+  "avatar" TEXT,
+  "created" TEXT,
+  "email" TEXT,
+  "emailVisibility" BOOLEAN DEFAULT FALSE,
+  "id" TEXT PRIMARY KEY,
+  "name" TEXT,
+  "password" TEXT,
+  "tokenKey" TEXT,
+  "updated" TEXT,
+  "verified" BOOLEAN DEFAULT FALSE,
+  "role" TEXT,
+  "phone" TEXT,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+-- Allow public read or authenticated access (adjust policies as needed):
+CREATE POLICY IF NOT EXISTS "Allow all read on users" ON public.users FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow authenticated full access on users" ON public.users FOR ALL TO authenticated USING (true);
+
+-- Table: public.customer_profiles
+CREATE TABLE IF NOT EXISTS public.customer_profiles (
+  "birthdate" TEXT,
+  "full_name" TEXT,
+  "gender" TEXT,
+  "id" TEXT PRIMARY KEY,
+  "notes" TEXT,
+  "phone" TEXT,
+  "user" TEXT,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_customer_profiles_user ON public.customer_profiles ("user");
+ALTER TABLE public.customer_profiles ENABLE ROW LEVEL SECURITY;
+-- Allow public read or authenticated access (adjust policies as needed):
+CREATE POLICY IF NOT EXISTS "Allow all read on customer_profiles" ON public.customer_profiles FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow authenticated full access on customer_profiles" ON public.customer_profiles FOR ALL TO authenticated USING (true);
+
+-- Table: public.admin_profiles
+CREATE TABLE IF NOT EXISTS public.admin_profiles (
+  "department" TEXT,
+  "id" TEXT PRIMARY KEY,
+  "permissions" JSONB,
+  "role_title" TEXT,
+  "user" TEXT,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_profiles_user ON public.admin_profiles ("user");
+ALTER TABLE public.admin_profiles ENABLE ROW LEVEL SECURITY;
+-- Allow public read or authenticated access (adjust policies as needed):
+CREATE POLICY IF NOT EXISTS "Allow all read on admin_profiles" ON public.admin_profiles FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow authenticated full access on admin_profiles" ON public.admin_profiles FOR ALL TO authenticated USING (true);
+
+-- Table: public.addresses
+CREATE TABLE IF NOT EXISTS public.addresses (
+  "address_line" TEXT,
+  "district" TEXT,
+  "id" TEXT PRIMARY KEY,
+  "is_default" BOOLEAN DEFAULT FALSE,
+  "phone" TEXT,
+  "postal_code" TEXT,
+  "province" TEXT,
+  "recipient_name" TEXT,
+  "subdistrict" TEXT,
+  "user" TEXT,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_addresses_user ON public.addresses ("user");
+ALTER TABLE public.addresses ENABLE ROW LEVEL SECURITY;
+-- Allow public read or authenticated access (adjust policies as needed):
+CREATE POLICY IF NOT EXISTS "Allow all read on addresses" ON public.addresses FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow authenticated full access on addresses" ON public.addresses FOR ALL TO authenticated USING (true);
+
+-- Table: public.suppliers
+CREATE TABLE IF NOT EXISTS public.suppliers (
+  "address" TEXT,
+  "contact_name" TEXT,
+  "email" TEXT,
+  "id" TEXT PRIMARY KEY,
+  "is_active" BOOLEAN DEFAULT FALSE,
+  "name" TEXT,
+  "notes" TEXT,
+  "phone" TEXT,
+  "tax_id" TEXT,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.suppliers ENABLE ROW LEVEL SECURITY;
+-- Allow public read or authenticated access (adjust policies as needed):
+CREATE POLICY IF NOT EXISTS "Allow all read on suppliers" ON public.suppliers FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow authenticated full access on suppliers" ON public.suppliers FOR ALL TO authenticated USING (true);
+
+-- Table: public.brands
+CREATE TABLE IF NOT EXISTS public.brands (
+  "description" TEXT,
+  "id" TEXT PRIMARY KEY,
+  "is_active" BOOLEAN DEFAULT FALSE,
+  "logo" TEXT,
+  "name" TEXT,
+  "slug" TEXT,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_brands_slug ON public.brands ("slug");
+ALTER TABLE public.brands ENABLE ROW LEVEL SECURITY;
+-- Allow public read or authenticated access (adjust policies as needed):
+CREATE POLICY IF NOT EXISTS "Allow all read on brands" ON public.brands FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow authenticated full access on brands" ON public.brands FOR ALL TO authenticated USING (true);
+
+-- Table: public.categories
+CREATE TABLE IF NOT EXISTS public.categories (
+  "description" TEXT,
+  "id" TEXT PRIMARY KEY,
+  "image" TEXT,
+  "is_active" BOOLEAN DEFAULT FALSE,
+  "name" TEXT,
+  "slug" TEXT,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_categories_slug ON public.categories ("slug");
+ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
+-- Allow public read or authenticated access (adjust policies as needed):
+CREATE POLICY IF NOT EXISTS "Allow all read on categories" ON public.categories FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow authenticated full access on categories" ON public.categories FOR ALL TO authenticated USING (true);
+
+-- Table: public.products
+CREATE TABLE IF NOT EXISTS public.products (
+  "additional_images" JSONB,
+  "base_price" NUMERIC,
+  "brand" TEXT,
+  "category" TEXT,
+  "description" TEXT,
+  "id" TEXT PRIMARY KEY,
+  "is_bestseller" BOOLEAN DEFAULT FALSE,
+  "is_new" BOOLEAN DEFAULT FALSE,
+  "main_image" TEXT,
+  "name" TEXT,
+  "slug" TEXT,
+  "status" TEXT,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_products_slug ON public.products ("slug");
+CREATE INDEX IF NOT EXISTS idx_products_status ON public.products ("status");
+ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
+-- Allow public read or authenticated access (adjust policies as needed):
+CREATE POLICY IF NOT EXISTS "Allow all read on products" ON public.products FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow authenticated full access on products" ON public.products FOR ALL TO authenticated USING (true);
+
+-- Table: public.product_variants
+CREATE TABLE IF NOT EXISTS public.product_variants (
+  "barcode" TEXT,
+  "color" TEXT,
+  "color_code" TEXT,
+  "cost_price" NUMERIC,
+  "id" TEXT PRIMARY KEY,
+  "image_url" TEXT,
+  "product" TEXT,
+  "sale_price" NUMERIC,
+  "selling_price" NUMERIC,
+  "size" TEXT,
+  "sku" TEXT,
+  "sold_quantity" NUMERIC,
+  "status" TEXT,
+  "stock_quantity" NUMERIC,
+  "variant_image" TEXT,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_product_variants_product ON public.product_variants ("product");
+CREATE INDEX IF NOT EXISTS idx_product_variants_sku ON public.product_variants ("sku");
+CREATE INDEX IF NOT EXISTS idx_product_variants_status ON public.product_variants ("status");
+ALTER TABLE public.product_variants ENABLE ROW LEVEL SECURITY;
+-- Allow public read or authenticated access (adjust policies as needed):
+CREATE POLICY IF NOT EXISTS "Allow all read on product_variants" ON public.product_variants FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow authenticated full access on product_variants" ON public.product_variants FOR ALL TO authenticated USING (true);
+
+-- Table: public.product_images
+CREATE TABLE IF NOT EXISTS public.product_images (
+  "alt_text" TEXT,
+  "id" TEXT PRIMARY KEY,
+  "image_file" TEXT,
+  "product" TEXT,
+  "sort_order" NUMERIC,
+  "variant" TEXT,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_product_images_product ON public.product_images ("product");
+CREATE INDEX IF NOT EXISTS idx_product_images_variant ON public.product_images ("variant");
+ALTER TABLE public.product_images ENABLE ROW LEVEL SECURITY;
+-- Allow public read or authenticated access (adjust policies as needed):
+CREATE POLICY IF NOT EXISTS "Allow all read on product_images" ON public.product_images FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow authenticated full access on product_images" ON public.product_images FOR ALL TO authenticated USING (true);
+
+-- Table: public.coupons
+CREATE TABLE IF NOT EXISTS public.coupons (
+  "code" TEXT,
+  "discount_type" TEXT,
+  "discount_value" NUMERIC,
+  "expiry_date" TEXT,
+  "id" TEXT PRIMARY KEY,
+  "max_discount" NUMERIC,
+  "min_purchase" NUMERIC,
+  "start_date" TEXT,
+  "status" TEXT,
+  "times_used" NUMERIC,
+  "usage_limit" NUMERIC,
+  "usage_per_customer" NUMERIC,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_coupons_status ON public.coupons ("status");
+ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
+-- Allow public read or authenticated access (adjust policies as needed):
+CREATE POLICY IF NOT EXISTS "Allow all read on coupons" ON public.coupons FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow authenticated full access on coupons" ON public.coupons FOR ALL TO authenticated USING (true);
+
+-- Table: public.coupon_usages
+CREATE TABLE IF NOT EXISTS public.coupon_usages (
+  "coupon" TEXT,
+  "discount_amount" NUMERIC,
+  "id" TEXT PRIMARY KEY,
+  "order_id" TEXT,
+  "used_at" TEXT,
+  "user" TEXT,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_coupon_usages_user ON public.coupon_usages ("user");
+ALTER TABLE public.coupon_usages ENABLE ROW LEVEL SECURITY;
+-- Allow public read or authenticated access (adjust policies as needed):
+CREATE POLICY IF NOT EXISTS "Allow all read on coupon_usages" ON public.coupon_usages FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow authenticated full access on coupon_usages" ON public.coupon_usages FOR ALL TO authenticated USING (true);
+
+-- Table: public.carts
+CREATE TABLE IF NOT EXISTS public.carts (
+  "id" TEXT PRIMARY KEY,
+  "status" TEXT,
+  "user" TEXT,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_carts_user ON public.carts ("user");
+CREATE INDEX IF NOT EXISTS idx_carts_status ON public.carts ("status");
+ALTER TABLE public.carts ENABLE ROW LEVEL SECURITY;
+-- Allow public read or authenticated access (adjust policies as needed):
+CREATE POLICY IF NOT EXISTS "Allow all read on carts" ON public.carts FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow authenticated full access on carts" ON public.carts FOR ALL TO authenticated USING (true);
+
+-- Table: public.cart_items
+CREATE TABLE IF NOT EXISTS public.cart_items (
+  "cart" TEXT,
+  "id" TEXT PRIMARY KEY,
+  "product" TEXT,
+  "quantity" NUMERIC,
+  "unit_price" NUMERIC,
+  "user" TEXT,
+  "variant" TEXT,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_cart_items_user ON public.cart_items ("user");
+CREATE INDEX IF NOT EXISTS idx_cart_items_product ON public.cart_items ("product");
+CREATE INDEX IF NOT EXISTS idx_cart_items_variant ON public.cart_items ("variant");
+ALTER TABLE public.cart_items ENABLE ROW LEVEL SECURITY;
+-- Allow public read or authenticated access (adjust policies as needed):
+CREATE POLICY IF NOT EXISTS "Allow all read on cart_items" ON public.cart_items FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow authenticated full access on cart_items" ON public.cart_items FOR ALL TO authenticated USING (true);
+
+-- Table: public.orders
+CREATE TABLE IF NOT EXISTS public.orders (
+  "coupon" TEXT,
+  "courier_name" TEXT,
+  "discount_amount" NUMERIC,
+  "grand_total" NUMERIC,
+  "id" TEXT PRIMARY KEY,
+  "notes" TEXT,
+  "order_number" TEXT,
+  "order_status" TEXT,
+  "payment_method" TEXT,
+  "payment_status" TEXT,
+  "shipping_address_snapshot" JSONB,
+  "shipping_date" TEXT,
+  "shipping_fee" NUMERIC,
+  "subtotal" NUMERIC,
+  "tracking_number" TEXT,
+  "user" TEXT,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_orders_user ON public.orders ("user");
+ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
+-- Allow public read or authenticated access (adjust policies as needed):
+CREATE POLICY IF NOT EXISTS "Allow all read on orders" ON public.orders FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow authenticated full access on orders" ON public.orders FOR ALL TO authenticated USING (true);
+
+-- Table: public.order_items
+CREATE TABLE IF NOT EXISTS public.order_items (
+  "color" TEXT,
+  "id" TEXT PRIMARY KEY,
+  "image_snapshot" TEXT,
+  "line_total" NUMERIC,
+  "order" TEXT,
+  "product_id" TEXT,
+  "product_name_snapshot" TEXT,
+  "quantity" NUMERIC,
+  "size" TEXT,
+  "sku" TEXT,
+  "unit_price" NUMERIC,
+  "variant" TEXT,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_order_items_variant ON public.order_items ("variant");
+CREATE INDEX IF NOT EXISTS idx_order_items_order ON public.order_items ("order");
+CREATE INDEX IF NOT EXISTS idx_order_items_sku ON public.order_items ("sku");
+ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
+-- Allow public read or authenticated access (adjust policies as needed):
+CREATE POLICY IF NOT EXISTS "Allow all read on order_items" ON public.order_items FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow authenticated full access on order_items" ON public.order_items FOR ALL TO authenticated USING (true);
+
+-- Table: public.payments
+CREATE TABLE IF NOT EXISTS public.payments (
+  "amount" NUMERIC,
+  "id" TEXT PRIMARY KEY,
+  "order" TEXT,
+  "payment_method" TEXT,
+  "status" TEXT,
+  "transaction_reference" TEXT,
+  "user" TEXT,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_payments_user ON public.payments ("user");
+CREATE INDEX IF NOT EXISTS idx_payments_order ON public.payments ("order");
+CREATE INDEX IF NOT EXISTS idx_payments_status ON public.payments ("status");
+ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
+-- Allow public read or authenticated access (adjust policies as needed):
+CREATE POLICY IF NOT EXISTS "Allow all read on payments" ON public.payments FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow authenticated full access on payments" ON public.payments FOR ALL TO authenticated USING (true);
+
+-- Table: public.payment_proofs
+CREATE TABLE IF NOT EXISTS public.payment_proofs (
+  "admin_note" TEXT,
+  "id" TEXT PRIMARY KEY,
+  "order" TEXT,
+  "slip_image" TEXT,
+  "status" TEXT,
+  "transfer_amount" NUMERIC,
+  "transfer_bank" TEXT,
+  "transfer_date" TEXT,
+  "transfer_time" TEXT,
+  "user" TEXT,
+  "verified_by" TEXT,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_payment_proofs_user ON public.payment_proofs ("user");
+CREATE INDEX IF NOT EXISTS idx_payment_proofs_order ON public.payment_proofs ("order");
+CREATE INDEX IF NOT EXISTS idx_payment_proofs_status ON public.payment_proofs ("status");
+ALTER TABLE public.payment_proofs ENABLE ROW LEVEL SECURITY;
+-- Allow public read or authenticated access (adjust policies as needed):
+CREATE POLICY IF NOT EXISTS "Allow all read on payment_proofs" ON public.payment_proofs FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow authenticated full access on payment_proofs" ON public.payment_proofs FOR ALL TO authenticated USING (true);
+
+-- Table: public.shipments
+CREATE TABLE IF NOT EXISTS public.shipments (
+  "courier_name" TEXT,
+  "estimated_delivery_date" TEXT,
+  "id" TEXT PRIMARY KEY,
+  "order" TEXT,
+  "shipping_date" TEXT,
+  "status" TEXT,
+  "tracking_number" TEXT,
+  "tracking_url" TEXT,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_shipments_order ON public.shipments ("order");
+CREATE INDEX IF NOT EXISTS idx_shipments_status ON public.shipments ("status");
+ALTER TABLE public.shipments ENABLE ROW LEVEL SECURITY;
+-- Allow public read or authenticated access (adjust policies as needed):
+CREATE POLICY IF NOT EXISTS "Allow all read on shipments" ON public.shipments FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow authenticated full access on shipments" ON public.shipments FOR ALL TO authenticated USING (true);
+
+-- Table: public.shipment_events
+CREATE TABLE IF NOT EXISTS public.shipment_events (
+  "description" TEXT,
+  "event_time" TEXT,
+  "id" TEXT PRIMARY KEY,
+  "location" TEXT,
+  "order" TEXT,
+  "shipment" TEXT,
+  "status" TEXT,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_shipment_events_order ON public.shipment_events ("order");
+CREATE INDEX IF NOT EXISTS idx_shipment_events_status ON public.shipment_events ("status");
+ALTER TABLE public.shipment_events ENABLE ROW LEVEL SECURITY;
+-- Allow public read or authenticated access (adjust policies as needed):
+CREATE POLICY IF NOT EXISTS "Allow all read on shipment_events" ON public.shipment_events FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow authenticated full access on shipment_events" ON public.shipment_events FOR ALL TO authenticated USING (true);
+
+-- Table: public.stock_movements
+CREATE TABLE IF NOT EXISTS public.stock_movements (
+  "created_by" TEXT,
+  "id" TEXT PRIMARY KEY,
+  "movement_type" TEXT,
+  "note" TEXT,
+  "product" TEXT,
+  "quantity" NUMERIC,
+  "reference_number" TEXT,
+  "sku" TEXT,
+  "supplier" TEXT,
+  "unit_cost" NUMERIC,
+  "variant" TEXT,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_stock_movements_product ON public.stock_movements ("product");
+CREATE INDEX IF NOT EXISTS idx_stock_movements_variant ON public.stock_movements ("variant");
+CREATE INDEX IF NOT EXISTS idx_stock_movements_sku ON public.stock_movements ("sku");
+ALTER TABLE public.stock_movements ENABLE ROW LEVEL SECURITY;
+-- Allow public read or authenticated access (adjust policies as needed):
+CREATE POLICY IF NOT EXISTS "Allow all read on stock_movements" ON public.stock_movements FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow authenticated full access on stock_movements" ON public.stock_movements FOR ALL TO authenticated USING (true);
+
+-- Table: public.purchase_orders
+CREATE TABLE IF NOT EXISTS public.purchase_orders (
+  "id" TEXT PRIMARY KEY,
+  "notes" TEXT,
+  "ordered_at" TEXT,
+  "po_number" TEXT,
+  "received_at" TEXT,
+  "status" TEXT,
+  "supplier" TEXT,
+  "total_cost" NUMERIC,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_purchase_orders_status ON public.purchase_orders ("status");
+ALTER TABLE public.purchase_orders ENABLE ROW LEVEL SECURITY;
+-- Allow public read or authenticated access (adjust policies as needed):
+CREATE POLICY IF NOT EXISTS "Allow all read on purchase_orders" ON public.purchase_orders FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow authenticated full access on purchase_orders" ON public.purchase_orders FOR ALL TO authenticated USING (true);
+
+-- Table: public.purchase_order_items
+CREATE TABLE IF NOT EXISTS public.purchase_order_items (
+  "id" TEXT PRIMARY KEY,
+  "line_total" NUMERIC,
+  "purchase_order" TEXT,
+  "quantity" NUMERIC,
+  "received_quantity" NUMERIC,
+  "unit_cost" NUMERIC,
+  "variant" TEXT,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_purchase_order_items_variant ON public.purchase_order_items ("variant");
+ALTER TABLE public.purchase_order_items ENABLE ROW LEVEL SECURITY;
+-- Allow public read or authenticated access (adjust policies as needed):
+CREATE POLICY IF NOT EXISTS "Allow all read on purchase_order_items" ON public.purchase_order_items FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow authenticated full access on purchase_order_items" ON public.purchase_order_items FOR ALL TO authenticated USING (true);
+
+-- Table: public.conversations
+CREATE TABLE IF NOT EXISTS public.conversations (
+  "id" TEXT PRIMARY KEY,
+  "last_message" TEXT,
+  "last_message_at" TEXT,
+  "status" TEXT,
+  "subject" TEXT,
+  "unread_admin_count" NUMERIC,
+  "unread_customer_count" NUMERIC,
+  "user" TEXT,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_conversations_user ON public.conversations ("user");
+CREATE INDEX IF NOT EXISTS idx_conversations_status ON public.conversations ("status");
+ALTER TABLE public.conversations ENABLE ROW LEVEL SECURITY;
+-- Allow public read or authenticated access (adjust policies as needed):
+CREATE POLICY IF NOT EXISTS "Allow all read on conversations" ON public.conversations FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow authenticated full access on conversations" ON public.conversations FOR ALL TO authenticated USING (true);
+
+-- Table: public.messages
+CREATE TABLE IF NOT EXISTS public.messages (
+  "attachment_image" TEXT,
+  "conversation" TEXT,
+  "id" TEXT PRIMARY KEY,
+  "is_read" BOOLEAN DEFAULT FALSE,
+  "message_text" TEXT,
+  "read_at" TEXT,
+  "sender_id" TEXT,
+  "sender_type" TEXT,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
+-- Allow public read or authenticated access (adjust policies as needed):
+CREATE POLICY IF NOT EXISTS "Allow all read on messages" ON public.messages FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow authenticated full access on messages" ON public.messages FOR ALL TO authenticated USING (true);
+
+-- Table: public.store_settings
+CREATE TABLE IF NOT EXISTS public.store_settings (
+  "address" TEXT,
+  "bank_accounts_json" JSONB,
+  "banner_image" TEXT,
+  "business_hours" TEXT,
+  "currency" TEXT,
+  "default_shipping_fee" NUMERIC,
+  "email" TEXT,
+  "facebook_page" TEXT,
+  "free_shipping_min_order" NUMERIC,
+  "id" TEXT PRIMARY KEY,
+  "instagram_handle" TEXT,
+  "line_id" TEXT,
+  "logo" TEXT,
+  "notification_settings_json" JSONB,
+  "phone" TEXT,
+  "privacy_policy" TEXT,
+  "pronunciation" TEXT,
+  "return_policy" TEXT,
+  "store_full_name" TEXT,
+  "store_name" TEXT,
+  "tax_settings_json" JSONB,
+  "terms_of_service" TEXT,
+  "welcome_message" TEXT,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.store_settings ENABLE ROW LEVEL SECURITY;
+-- Allow public read or authenticated access (adjust policies as needed):
+CREATE POLICY IF NOT EXISTS "Allow all read on store_settings" ON public.store_settings FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow authenticated full access on store_settings" ON public.store_settings FOR ALL TO authenticated USING (true);
+
+-- Table: public.audit_logs
+CREATE TABLE IF NOT EXISTS public.audit_logs (
+  "action" TEXT,
+  "entity_id" TEXT,
+  "entity_type" TEXT,
+  "id" TEXT PRIMARY KEY,
+  "ip_address" TEXT,
+  "new_values_json" JSONB,
+  "old_values_json" JSONB,
+  "user_agent" TEXT,
+  "user_id" TEXT,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+-- Allow public read or authenticated access (adjust policies as needed):
+CREATE POLICY IF NOT EXISTS "Allow all read on audit_logs" ON public.audit_logs FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow authenticated full access on audit_logs" ON public.audit_logs FOR ALL TO authenticated USING (true);
+
+
+
+-- =====================================================================
+-- C-TOWN SNEAKER STORE - SUPABASE SEED DATA (MIGRATED FROM POCKETBASE)
+-- =====================================================================
+
+-- Data for: public.users (9 rows)
+INSERT INTO public.users ("avatar", "created", "email", "emailVisibility", "id", "name", "password", "tokenKey", "updated", "verified", "role", "phone") VALUES ('', '2026-09-28 07:08:40.817Z', 'admin@c-town-sneaker.com', FALSE, 'z3i4k8umey0mq87', 'C-TOWN Superadmin', '$2a$10$qUFBAyf6hYybWYoGjUk/Iep6eoAxA1lSOlnqD.fLBVvawkEztFZbq', 'rZLrpLs77k0VCs39v9qFJpuootNX3o4L48bszH02GOiFEsGi33', '2026-09-28 07:10:06.305Z', TRUE, 'ADMIN', '081-999-8888') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.users ("avatar", "created", "email", "emailVisibility", "id", "name", "password", "tokenKey", "updated", "verified", "role", "phone") VALUES ('', '2026-09-28 07:11:25.573Z', 'customer1@example.com', FALSE, 'blo98a6asygm3b2', 'Somchai Sneakerhead', '$2a$10$7H9TBFfh8s0m.iuPvsj/T.OfKLwFetvRbAs/1RWJFjjL2sYpC3i2i', 'xs104rcn1SA4EGIm3G2uNaipNb7TpfIe6Y7OUl51TKeBIQqYUK', '2026-09-28 07:11:25.573Z', FALSE, 'ADMIN', '089-123-4567') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.users ("avatar", "created", "email", "emailVisibility", "id", "name", "password", "tokenKey", "updated", "verified", "role", "phone") VALUES ('', '2026-09-28 07:12:23.387Z', 'customer_test@example.com', FALSE, 'f16952pn2354szz', 'Test User', '$2a$10$sdktuefhWA6BFpc49W6pje9ZaYTgVRdk2XIWudnEH1oqx1ByyZ1Iy', '04Y14H8nqIeZCKh2zReX5AmXHEZoT15ed51tT8bjCc2cvIHSn9', '2026-09-28 07:12:23.387Z', FALSE, 'CUSTOMER', '081-111-2222') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.users ("avatar", "created", "email", "emailVisibility", "id", "name", "password", "tokenKey", "updated", "verified", "role", "phone") VALUES ('', '2026-09-28 07:45:43.487Z', 'admin@ctown.local', FALSE, '2t243534z0gmfuh', 'C-TOWN Administrator', '$2a$10$96MROIY5gKll.Z4bWan/Dea.VnGooKm9KlFKEMS.cggB4jqblAAC2', 'BHqUXx26U7O51mct0249rQ13ZOe1o1Bkr28t1YmqWn50tRTz2M', '2026-09-28 08:45:38.467Z', TRUE, 'ADMIN', '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.users ("avatar", "created", "email", "emailVisibility", "id", "name", "password", "tokenKey", "updated", "verified", "role", "phone") VALUES ('', '2026-09-28 08:15:53.713Z', 'testcustomer1@example.com', FALSE, '0289bwelu95s7w2', '?????? ????', '$2a$10$89KkW1kCLhVZcNzeeTdv9uAIlHEnqVzb5AJIaSTF2CoahfKd18tsO', 'Xf5tKwad8W945J8k7WFUGwX9mT1u308a6FyKtZOPVgmLA2yVOj', '2026-09-28 08:15:53.713Z', FALSE, 'CUSTOMER', '0891234567') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.users ("avatar", "created", "email", "emailVisibility", "id", "name", "password", "tokenKey", "updated", "verified", "role", "phone") VALUES ('', '2026-09-28 08:25:28.373Z', 'customer_new@example.com', FALSE, '338v5kq700lkd39', '????????? ?????????', '$2a$10$8ic3x33h7kpEfhNCcTsSNe3OsHZB2xOqf.hFruV1M51tzLE/iuizO', '0fQh8bBdSBYDsyGURcwB88fwqxng8Cy64r8sqFII3psxYS7ij9', '2026-09-28 08:25:28.373Z', TRUE, 'CUSTOMER', '0819998877') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.users ("avatar", "created", "email", "emailVisibility", "id", "name", "password", "tokenKey", "updated", "verified", "role", "phone") VALUES ('', '2026-09-28 08:33:54.172Z', 'user_phone_tester@ctown.com', FALSE, '6u59fhl0rs35mp4', 'Phone Tester', '$2a$10$Gyylt.PAvfuezAEDmo97GedATKxSgOF9.G8z/vhTpDju3lsKthfo2', '7M400331PuyD6L92790659H6R83qXpY4l4Zw31490Me17rkoS1', '2026-09-28 08:33:54.172Z', TRUE, 'CUSTOMER', '0812345678') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.users ("avatar", "created", "email", "emailVisibility", "id", "name", "password", "tokenKey", "updated", "verified", "role", "phone") VALUES ('', '2026-09-28 08:43:50.998Z', 'prasatitcity@gmail.com', FALSE, 'ubfrjphv70np53s', 'Chutikan Lurajan', '$2a$10$OdxPB3Ny1DIoIc1wNm9lbeicOGSwF4ABWzt5pRUIRnW1m8VmAQ7Xy', 'OjJzk06Qb71oZWW67B576Ad3iX4c4053ygfBS8twemAQSNJgp6', '2026-09-28 08:43:50.998Z', TRUE, 'CUSTOMER', '0635922256') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.users ("avatar", "created", "email", "emailVisibility", "id", "name", "password", "tokenKey", "updated", "verified", "role", "phone") VALUES ('', '2026-09-28 08:45:38.337Z', 'somying_smart@test.com', FALSE, '8ci8pm0774he32z', 'สมหญิง รักสวย', '$2a$10$DLD8rMWN.GK1iFhPfcMg1ezwlIsHMSo5r6sKrZh9ZNd89uWSI5ukG', 'ZN50U9OHIesp8zGPHcveTfKl2N6qO5ftE3akgT029fDsFJu4W7', '2026-09-28 08:45:38.337Z', TRUE, 'CUSTOMER', '0891234567') ON CONFLICT ("id") DO NOTHING;
+
+-- Data for: public.customer_profiles (13 rows)
+INSERT INTO public.customer_profiles ("birthdate", "full_name", "gender", "id", "notes", "phone", "user") VALUES ('', 'C-TOWN Superadmin', '', 'lfewe271asbwv1o', '', '081-999-8888', 'z3i4k8umey0mq87') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.customer_profiles ("birthdate", "full_name", "gender", "id", "notes", "phone", "user") VALUES ('', 'Somchai Sneakerhead', '', 'pddw63vgw6rd30u', '', '089-123-4567', 'blo98a6asygm3b2') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.customer_profiles ("birthdate", "full_name", "gender", "id", "notes", "phone", "user") VALUES ('', 'Test User', '', 'xgt4gg1fq0225mf', '', '081-111-2222', 'f16952pn2354szz') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.customer_profiles ("birthdate", "full_name", "gender", "id", "notes", "phone", "user") VALUES ('', 'C-TOWN Administrator', '', 'c18lqj7s3445476', '', '', '2t243534z0gmfuh') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.customer_profiles ("birthdate", "full_name", "gender", "id", "notes", "phone", "user") VALUES ('', '?????? ????', '', '5mpymkm4aoud1f2', '', '0891234567', '0289bwelu95s7w2') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.customer_profiles ("birthdate", "full_name", "gender", "id", "notes", "phone", "user") VALUES ('', '????????? ?????????', '', '5pf8xrs562vl0w6', '', '0819998877', '338v5kq700lkd39') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.customer_profiles ("birthdate", "full_name", "gender", "id", "notes", "phone", "user") VALUES ('', '????????? ?????????', '', '28077i2s01ovui2', '', '0819998877', '338v5kq700lkd39') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.customer_profiles ("birthdate", "full_name", "gender", "id", "notes", "phone", "user") VALUES ('', 'Phone Tester', '', 'k012a23s8pi3493', '', '0812345678', '6u59fhl0rs35mp4') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.customer_profiles ("birthdate", "full_name", "gender", "id", "notes", "phone", "user") VALUES ('', 'Phone Tester', '', 'y07705agr4707d3', '', '0812345678', '6u59fhl0rs35mp4') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.customer_profiles ("birthdate", "full_name", "gender", "id", "notes", "phone", "user") VALUES ('', 'Chutikan Lurajan', '', 'iq204gi14wvgjl6', '', '0635922256', 'ubfrjphv70np53s') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.customer_profiles ("birthdate", "full_name", "gender", "id", "notes", "phone", "user") VALUES ('', 'Chutikan Lurajan', '', 'd68xd0d22w783df', '', '0635922256', 'ubfrjphv70np53s') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.customer_profiles ("birthdate", "full_name", "gender", "id", "notes", "phone", "user") VALUES ('', 'สมหญิง รักสวย', '', '99j3j65s23q77q0', '', '0891234567', '8ci8pm0774he32z') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.customer_profiles ("birthdate", "full_name", "gender", "id", "notes", "phone", "user") VALUES ('', 'สมหญิง รักสวย', '', '1c94q20smceb08k', '', '0891234567', '8ci8pm0774he32z') ON CONFLICT ("id") DO NOTHING;
+
+-- Data for: public.admin_profiles (2 rows)
+INSERT INTO public.admin_profiles ("department", "id", "permissions", "role_title", "user") VALUES ('Management', 'y5fe03i0k9l4eo8', '["ALL"]'::jsonb, 'Store Owner & Superadmin', 'z3i4k8umey0mq87') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.admin_profiles ("department", "id", "permissions", "role_title", "user") VALUES ('Management', '0p21fyl5tv526q1', '["ALL"]'::jsonb, 'Store Owner & Superadmin', '2t243534z0gmfuh') ON CONFLICT ("id") DO NOTHING;
+
+-- Data for: public.suppliers (1 rows)
+INSERT INTO public.suppliers ("address", "contact_name", "email", "id", "is_active", "name", "notes", "phone", "tax_id") VALUES ('', 'Supplier Manager', 'supply@nikethailand.co.th', '2qprb5f8nhi3y36', TRUE, 'Nike Official Thailand Distribution', '', '02-999-1111', '') ON CONFLICT ("id") DO NOTHING;
+
+-- Data for: public.brands (6 rows)
+INSERT INTO public.brands ("description", "id", "is_active", "logo", "name", "slug") VALUES ('Iconic sportswear and streetwear sneaker leader', '6gh3j5j96rt57cz', TRUE, '', 'Nike', 'nike') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.brands ("description", "id", "is_active", "logo", "name", "slug") VALUES ('Classic retro silhouettes and terrace culture', '3r36h794lepj14c', TRUE, '', 'Adidas', 'adidas') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.brands ("description", "id", "is_active", "logo", "name", "slug") VALUES ('Legendary basketball heritage and high fashion collabs', 's4v017q398h3309', TRUE, '', 'Jordan', 'jordan') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.brands ("description", "id", "is_active", "logo", "name", "slug") VALUES ('Timeless dad shoes and modern lifestyle runners', '48k4vz24g294fb2', TRUE, '', 'New Balance', 'new-balance') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.brands ("description", "id", "is_active", "logo", "name", "slug") VALUES ('Timeless vulcanized canvas icons', '39tzml547t349j0', TRUE, '', 'Converse', 'converse') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.brands ("description", "id", "is_active", "logo", "name", "slug") VALUES ('Authentic Southern California skate culture', 'nam1949uo910hfl', TRUE, '', 'Vans', 'vans') ON CONFLICT ("id") DO NOTHING;
+
+-- Data for: public.categories (7 rows)
+INSERT INTO public.categories ("description", "id", "image", "is_active", "name", "slug") VALUES ('Men''s Sneaker Collection', 'bkf9rbk1g84z1zg', '', TRUE, 'รองเท้าผ้าใบผู้ชาย', 'men') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.categories ("description", "id", "image", "is_active", "name", "slug") VALUES ('Women''s Sneaker Collection', 'r8g1bzowlc27xw1', '', TRUE, 'รองเท้าผ้าใบผู้หญิง', 'women') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.categories ("description", "id", "image", "is_active", "name", "slug") VALUES ('Gender-neutral versatile sneakers', 'q836thmmx9k88ho', '', TRUE, 'รองเท้าผ้าใบ Unisex', 'unisex') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.categories ("description", "id", "image", "is_active", "name", "slug") VALUES ('Hype and lifestyle streetwear kicks', '8zt2nejef08k1l7', '', TRUE, 'รองเท้าสไตล์ Streetwear', 'streetwear') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.categories ("description", "id", "image", "is_active", "name", "slug") VALUES ('Comfort running and training footwear', 'xgu95ty13037w87', '', TRUE, 'รองเท้ากีฬา', 'performance-sports') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.categories ("description", "id", "image", "is_active", "name", "slug") VALUES ('Latest drops and freshest arrivals', '325mkp879t4qe0s', '', TRUE, 'สินค้าใหม่', 'new-arrivals') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.categories ("description", "id", "image", "is_active", "name", "slug") VALUES ('Top ranking most popular sneakers', '7317kuihfyl134b', '', TRUE, 'สินค้าขายดี', 'best-sellers') ON CONFLICT ("id") DO NOTHING;
+
+-- Data for: public.products (5 rows)
+INSERT INTO public.products ("additional_images", "base_price", "brand", "category", "description", "id", "is_bestseller", "is_new", "main_image", "name", "slug", "status") VALUES ('[]'::jsonb, 3700, '6gh3j5j96rt57cz', '8zt2nejef08k1l7', 'รองเท้าผ้าใบระดับตำนานที่ครองใจสายสตรีทมาอย่างยาวนาน โดดเด่นด้วยหนังพรีเมียมเรียบเนียน โทนสีคลีนสะดุดตา พร้อมระบบกันกระแทก Nike Air ที่สวมใส่สบายได้ตลอดวัน', 't3e0r4d88382z6p', TRUE, FALSE, '', 'Nike Air Force 1 ''07', 'nike-air-force-1-07', 'active') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.products ("additional_images", "base_price", "brand", "category", "description", "id", "is_bestseller", "is_new", "main_image", "name", "slug", "status") VALUES ('[]'::jsonb, 3800, '3r36h794lepj14c', '8zt2nejef08k1l7', 'ไอคอนทรงเสน่ห์แห่งยุค Terrace Culture รองเท้าหนังผิวเรียบตกแต่งด้วยหนังกลับรูปตัว T ที่หัวรองเท้า และพื้นยาง Gum Rubber อันเป็นเอกลักษณ์ แมตช์ง่ายกับทุกลุค', '80615384541l1aa', TRUE, TRUE, '', 'Adidas Samba OG', 'adidas-samba-og', 'active') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.products ("additional_images", "base_price", "brand", "category", "description", "id", "is_bestseller", "is_new", "main_image", "name", "slug", "status") VALUES ('[]'::jsonb, 4200, '48k4vz24g294fb2', 'q836thmmx9k88ho', 'สนีกเกอร์สไตล์เรโทรยุค 90-2000 ที่ผสมผสานผ้าตาข่ายระบายอากาศเข้ากับดีเทลสีเงินเมทัลลิก พร้อมเทคโนโลยีซับแรงกระแทก ABZORB น้ำหนักเบา สบายเท้า', '2wf6542jhxbpzw0', TRUE, TRUE, '', 'New Balance 530', 'new-balance-530', 'active') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.products ("additional_images", "base_price", "brand", "category", "description", "id", "is_bestseller", "is_new", "main_image", "name", "slug", "status") VALUES ('[]'::jsonb, 4700, 's4v017q398h3309', 'r8g1bzowlc27xw1', 'ดีไซน์หรูหราสำหรับสุภาพสตรีและคอลเลกชันพิเศษ ตกแต่งด้วยโลโก้ Swoosh สี Rose Gold เมทัลลิก หนังสีขาวและบลัชพิงก์ สะท้อนความลักชัวรีของสตรีทแวร์', '1z0000jxdn85et7', FALSE, TRUE, '', 'Air Jordan 1 Low', 'air-jordan-1-low-rose-gold', 'active') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.products ("additional_images", "base_price", "brand", "category", "description", "id", "is_bestseller", "is_new", "main_image", "name", "slug", "status") VALUES ('[]'::jsonb, 3300, '39tzml547t349j0', 'q836thmmx9k88ho', 'รองเท้าผ้าใบระดับไอคอนิค ทรงไฮท็อปผ้าใบแคนวาส 12oz หนาทนทาน ขอบยางสี Egret วินเทจ เดินด้ายตะเข็บคู่ และแผ่นรองเท้า OrthoLite นุ่มสบาย', 'vi3bo1003u2b1fx', TRUE, FALSE, '', 'Converse Chuck 70 High', 'converse-chuck-70-high', 'active') ON CONFLICT ("id") DO NOTHING;
+
+-- Data for: public.product_variants (55 rows)
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885768778321', 'White', '#FFFFFF', 2400, 'rw06l19o18zv0q5', '/images/products/nike_af1_white.jpg', 't3e0r4d88382z6p', 0, 3700, '36', 'NIKE-A-WHI-SZ36', 5, 'active', 6, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885898737343', 'White', '#FFFFFF', 2400, 'w4r26mq3g793h7d', '/images/products/nike_af1_white.jpg', 't3e0r4d88382z6p', 0, 3700, '37', 'NIKE-A-WHI-SZ37', 2, 'active', 13, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885376159448', 'White', '#FFFFFF', 2400, '22b9254f18i8nlp', '/images/products/nike_af1_white.jpg', 't3e0r4d88382z6p', 0, 3700, '38', 'NIKE-A-WHI-SZ38', 3, 'active', 10, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885927936417', 'White', '#FFFFFF', 2400, '6gf46lhxwnnkd8g', '/images/products/nike_af1_white.jpg', 't3e0r4d88382z6p', 0, 3700, '39', 'NIKE-A-WHI-SZ39', 1, 'active', 12, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885487575041', 'White', '#FFFFFF', 2400, 'y7fun97408m044w', '/images/products/nike_af1_white.jpg', 't3e0r4d88382z6p', 0, 3700, '40', 'NIKE-A-WHI-SZ40', 2, 'active', 8, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885370656911', 'White', '#FFFFFF', 2400, 'tn1961966097611', '/images/products/nike_af1_white.jpg', 't3e0r4d88382z6p', 0, 3700, '41', 'NIKE-A-WHI-SZ41', 2, 'active', 12, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885773221398', 'White', '#FFFFFF', 2400, 'g99xfy791o602z4', '/images/products/nike_af1_white.jpg', 't3e0r4d88382z6p', 0, 3700, '42', 'NIKE-A-WHI-SZ42', 1, 'active', 10, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885470870219', 'White', '#FFFFFF', 2400, 'ze3083yo0iezi9b', '/images/products/nike_af1_white.jpg', 't3e0r4d88382z6p', 0, 3700, '43', 'NIKE-A-WHI-SZ43', 3, 'active', 12, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885247242290', 'White', '#FFFFFF', 2400, 'kt2w79l02yjgx5o', '/images/products/nike_af1_white.jpg', 't3e0r4d88382z6p', 0, 3700, '44', 'NIKE-A-WHI-SZ44', 1, 'active', 11, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885581501539', 'Rose Pink', '#E05A88', 2500, '85jx8pa2x34ya9c', '/images/products/nike_af1_pink.jpg', 't3e0r4d88382z6p', 3700, 3900, '36', 'NIKE-A-ROS-SZ36', 4, 'active', 14, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885989803328', 'Rose Pink', '#E05A88', 2500, 'p26k785mbb69983', '/images/products/nike_af1_pink.jpg', 't3e0r4d88382z6p', 3700, 3900, '37', 'NIKE-A-ROS-SZ37', 2, 'active', 11, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885255069232', 'Rose Pink', '#E05A88', 2500, '75rm2310wda23pu', '/images/products/nike_af1_pink.jpg', 't3e0r4d88382z6p', 3700, 3900, '38', 'NIKE-A-ROS-SZ38', 1, 'active', 12, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885296385945', 'Rose Pink', '#E05A88', 2500, '0y1439557mdf2d6', '/images/products/nike_af1_pink.jpg', 't3e0r4d88382z6p', 3700, 3900, '39', 'NIKE-A-ROS-SZ39', 1, 'active', 10, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885197790689', 'Rose Pink', '#E05A88', 2500, '3tqnif8sjlxxj12', '/images/products/nike_af1_pink.jpg', 't3e0r4d88382z6p', 3700, 3900, '40', 'NIKE-A-ROS-SZ40', 2, 'active', 12, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885872693728', 'Rose Pink', '#E05A88', 2500, '248p36b20779s5c', '/images/products/nike_af1_pink.jpg', 't3e0r4d88382z6p', 3700, 3900, '41', 'NIKE-A-ROS-SZ41', 4, 'active', 11, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885641406393', 'Triple Black', '#18181B', 2400, '19469f26169r94i', '/images/products/nike_af1_black.jpg', 't3e0r4d88382z6p', 0, 3700, '38', 'NIKE-A-TRI-SZ38', 4, 'active', 10, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885531104548', 'Triple Black', '#18181B', 2400, 'mjb2ks5f317u4hn', '/images/products/nike_af1_black.jpg', 't3e0r4d88382z6p', 0, 3700, '39', 'NIKE-A-TRI-SZ39', 3, 'active', 11, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885210536333', 'Triple Black', '#18181B', 2400, 'l44m18858bhlp86', '/images/products/nike_af1_black.jpg', 't3e0r4d88382z6p', 0, 3700, '40', 'NIKE-A-TRI-SZ40', 0, 'active', 13, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885383535255', 'Triple Black', '#18181B', 2400, '3u881ff13d02s38', '/images/products/nike_af1_black.jpg', 't3e0r4d88382z6p', 0, 3700, '41', 'NIKE-A-TRI-SZ41', 0, 'active', 8, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885195481344', 'Triple Black', '#18181B', 2400, 'r6l03696818z7xk', '/images/products/nike_af1_black.jpg', 't3e0r4d88382z6p', 0, 3700, '42', 'NIKE-A-TRI-SZ42', 2, 'active', 12, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885985213716', 'Triple Black', '#18181B', 2400, 'a8oxzg16s3vtwof', '/images/products/nike_af1_black.jpg', 't3e0r4d88382z6p', 0, 3700, '43', 'NIKE-A-TRI-SZ43', 1, 'active', 14, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885603073607', 'Triple Black', '#18181B', 2400, '0w2p3mr574e63o3', '/images/products/nike_af1_black.jpg', 't3e0r4d88382z6p', 0, 3700, '44', 'NIKE-A-TRI-SZ44', 4, 'active', 14, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885901986139', 'Triple Black', '#18181B', 2400, 'xk7651gq93s5k8k', '/images/products/nike_af1_black.jpg', 't3e0r4d88382z6p', 0, 3700, '45', 'NIKE-A-TRI-SZ45', 1, 'active', 15, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885744947405', 'Cloud White / Core Black', '#FFFFFF', 2500, '5eivd91357m55f6', '/images/products/adidas_samba_white.jpg', '80615384541l1aa', 0, 3800, '36', 'ADIDAS-CLO-SZ36', 4, 'active', 9, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885458823402', 'Cloud White / Core Black', '#FFFFFF', 2500, 'a1u8vt6fs16n52p', '/images/products/adidas_samba_white.jpg', '80615384541l1aa', 0, 3800, '37', 'ADIDAS-CLO-SZ37', 1, 'active', 8, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885619781446', 'Cloud White / Core Black', '#FFFFFF', 2500, '6541sqex4o2orgc', '/images/products/adidas_samba_white.jpg', '80615384541l1aa', 0, 3800, '38', 'ADIDAS-CLO-SZ38', 4, 'active', 9, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885782177910', 'Cloud White / Core Black', '#FFFFFF', 2500, 'n4n61vhj7768458', '/images/products/adidas_samba_white.jpg', '80615384541l1aa', 0, 3800, '39', 'ADIDAS-CLO-SZ39', 2, 'active', 9, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885647187450', 'Cloud White / Core Black', '#FFFFFF', 2500, 'l87pkx28sr1727h', '/images/products/adidas_samba_white.jpg', '80615384541l1aa', 0, 3800, '40', 'ADIDAS-CLO-SZ40', 2, 'active', 10, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885431516999', 'Cloud White / Core Black', '#FFFFFF', 2500, '89n4yi27hyc3p6k', '/images/products/adidas_samba_white.jpg', '80615384541l1aa', 0, 3800, '41', 'ADIDAS-CLO-SZ41', 0, 'active', 8, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885641411433', 'Cloud White / Core Black', '#FFFFFF', 2500, '9flg4chg4n7a0h4', '/images/products/adidas_samba_white.jpg', '80615384541l1aa', 0, 3800, '42', 'ADIDAS-CLO-SZ42', 0, 'active', 9, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885472354182', 'Cloud White / Core Black', '#FFFFFF', 2500, '43e2m0lp1jtgh33', '/images/products/adidas_samba_white.jpg', '80615384541l1aa', 0, 3800, '43', 'ADIDAS-CLO-SZ43', 4, 'active', 12, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885363613766', 'White / Silver Metallic', '#E2E8F0', 2800, '51w8q259471tluv', '/images/products/nb530_silver.jpg', '2wf6542jhxbpzw0', 0, 4200, '36', 'NEW-BA-WHI-SZ36', 4, 'active', 14, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885332565924', 'White / Silver Metallic', '#E2E8F0', 2800, 'a247889di5unwiz', '/images/products/nb530_silver.jpg', '2wf6542jhxbpzw0', 0, 4200, '37', 'NEW-BA-WHI-SZ37', 0, 'active', 15, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885827143985', 'White / Silver Metallic', '#E2E8F0', 2800, '56fhdn3za87obb3', '/images/products/nb530_silver.jpg', '2wf6542jhxbpzw0', 0, 4200, '38', 'NEW-BA-WHI-SZ38', 0, 'active', 10, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885368834156', 'White / Silver Metallic', '#E2E8F0', 2800, 't2rm25beoi2mbqb', '/images/products/nb530_silver.jpg', '2wf6542jhxbpzw0', 0, 4200, '39', 'NEW-BA-WHI-SZ39', 1, 'active', 14, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885438517480', 'White / Silver Metallic', '#E2E8F0', 2800, '5y5f3s34p2e76cj', '/images/products/nb530_silver.jpg', '2wf6542jhxbpzw0', 0, 4200, '40', 'NEW-BA-WHI-SZ40', 3, 'active', 13, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885972502751', 'White / Silver Metallic', '#E2E8F0', 2800, '0032t42dq89ny67', '/images/products/nb530_silver.jpg', '2wf6542jhxbpzw0', 0, 4200, '41', 'NEW-BA-WHI-SZ41', 4, 'active', 10, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885446304354', 'White / Silver Metallic', '#E2E8F0', 2800, 'n82601815h2u5mp', '/images/products/nb530_silver.jpg', '2wf6542jhxbpzw0', 0, 4200, '42', 'NEW-BA-WHI-SZ42', 2, 'active', 15, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885304037846', 'White / Silver Metallic', '#E2E8F0', 2800, 'zp55sd2g1qyhct1', '/images/products/nb530_silver.jpg', '2wf6542jhxbpzw0', 0, 4200, '43', 'NEW-BA-WHI-SZ43', 1, 'active', 9, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885435126245', 'White / Silver Metallic', '#E2E8F0', 2800, 'y8dc6lk4065kszh', '/images/products/nb530_silver.jpg', '2wf6542jhxbpzw0', 0, 4200, '44', 'NEW-BA-WHI-SZ44', 0, 'active', 15, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885519954502', 'Metallic Rose Gold / White', '#E5B299', 3100, '7sf25o6mc8850bm', '/images/products/jordan1_rose_gold.jpg', '1z0000jxdn85et7', 0, 4700, '36', 'AIR-JO-MET-SZ36', 0, 'active', 11, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885483524787', 'Metallic Rose Gold / White', '#E5B299', 3100, 'awnfrbqdv602643', '/images/products/jordan1_rose_gold.jpg', '1z0000jxdn85et7', 0, 4700, '37', 'AIR-JO-MET-SZ37', 2, 'active', 9, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885302726689', 'Metallic Rose Gold / White', '#E5B299', 3100, '2v32q496yu7v4f1', '/images/products/jordan1_rose_gold.jpg', '1z0000jxdn85et7', 0, 4700, '38', 'AIR-JO-MET-SZ38', 3, 'active', 15, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885760425788', 'Metallic Rose Gold / White', '#E5B299', 3100, 'v59134zioom9210', '/images/products/jordan1_rose_gold.jpg', '1z0000jxdn85et7', 0, 4700, '39', 'AIR-JO-MET-SZ39', 4, 'active', 9, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885623304008', 'Metallic Rose Gold / White', '#E5B299', 3100, 'c1932b3x53a4ev8', '/images/products/jordan1_rose_gold.jpg', '1z0000jxdn85et7', 0, 4700, '40', 'AIR-JO-MET-SZ40', 4, 'active', 8, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885963194111', 'Metallic Rose Gold / White', '#E5B299', 3100, '9a7pqwzqn3mlez9', '/images/products/jordan1_rose_gold.jpg', '1z0000jxdn85et7', 0, 4700, '41', 'AIR-JO-MET-SZ41', 2, 'active', 11, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885990013723', 'Classic Black', '#18181B', 2100, 'g57by03542m3vz8', '/images/products/converse_chuck_black.jpg', 'vi3bo1003u2b1fx', 0, 3300, '36', 'CONVER-CLA-SZ36', 2, 'active', 10, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885554911080', 'Classic Black', '#18181B', 2100, '04n175miv9yy8o7', '/images/products/converse_chuck_black.jpg', 'vi3bo1003u2b1fx', 0, 3300, '37', 'CONVER-CLA-SZ37', 0, 'active', 12, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885735356629', 'Classic Black', '#18181B', 2100, 'y03x654dei7g95h', '/images/products/converse_chuck_black.jpg', 'vi3bo1003u2b1fx', 0, 3300, '38', 'CONVER-CLA-SZ38', 0, 'active', 15, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885599167241', 'Classic Black', '#18181B', 2100, 'o5rxdskk104wbd6', '/images/products/converse_chuck_black.jpg', 'vi3bo1003u2b1fx', 0, 3300, '39', 'CONVER-CLA-SZ39', 0, 'active', 10, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885299427908', 'Classic Black', '#18181B', 2100, 'oaa00atc5983o54', '/images/products/converse_chuck_black.jpg', 'vi3bo1003u2b1fx', 0, 3300, '40', 'CONVER-CLA-SZ40', 0, 'active', 14, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885879534110', 'Classic Black', '#18181B', 2100, '31wz314101r46bo', '/images/products/converse_chuck_black.jpg', 'vi3bo1003u2b1fx', 0, 3300, '41', 'CONVER-CLA-SZ41', 2, 'active', 10, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885126126365', 'Classic Black', '#18181B', 2100, 'l8tn906hl775paw', '/images/products/converse_chuck_black.jpg', 'vi3bo1003u2b1fx', 0, 3300, '42', 'CONVER-CLA-SZ42', 4, 'active', 12, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885971289739', 'Classic Black', '#18181B', 2100, '426m5f617rq6405', '/images/products/converse_chuck_black.jpg', 'vi3bo1003u2b1fx', 0, 3300, '43', 'CONVER-CLA-SZ43', 1, 'active', 11, '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.product_variants ("barcode", "color", "color_code", "cost_price", "id", "image_url", "product", "sale_price", "selling_price", "size", "sku", "sold_quantity", "status", "stock_quantity", "variant_image") VALUES ('885976375424', 'Classic Black', '#18181B', 2100, 'vk95e57h6a8cp5b', '/images/products/converse_chuck_black.jpg', 'vi3bo1003u2b1fx', 0, 3300, '44', 'CONVER-CLA-SZ44', 4, 'active', 12, '') ON CONFLICT ("id") DO NOTHING;
+
+-- Data for: public.coupons (4 rows)
+INSERT INTO public.coupons ("code", "discount_type", "discount_value", "expiry_date", "id", "max_discount", "min_purchase", "start_date", "status", "times_used", "usage_limit", "usage_per_customer") VALUES ('WELCOME100', 'fixed', 100, '2027-12-31', '4xq1mkyh44t2lq0', 100, 1500, '2026-01-01', 'active', 1, 1000, 3) ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.coupons ("code", "discount_type", "discount_value", "expiry_date", "id", "max_discount", "min_purchase", "start_date", "status", "times_used", "usage_limit", "usage_per_customer") VALUES ('CTOWN10', 'percent', 10, '2027-12-31', 'x4wm0r6mpppo01s', 500, 2000, '2026-01-01', 'active', 0, 500, 3) ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.coupons ("code", "discount_type", "discount_value", "expiry_date", "id", "max_discount", "min_purchase", "start_date", "status", "times_used", "usage_limit", "usage_per_customer") VALUES ('FREESHIP', 'free_shipping', 60, '2027-12-31', '0eeb6278k5c2a6w', 60, 1000, '2026-01-01', 'active', 0, 2000, 3) ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.coupons ("code", "discount_type", "discount_value", "expiry_date", "id", "max_discount", "min_purchase", "start_date", "status", "times_used", "usage_limit", "usage_per_customer") VALUES ('VIP500', 'fixed', 500, '2027-12-31', '7ke4f01lz8n4560', 500, 4000, '2026-01-01', 'active', 0, 200, 3) ON CONFLICT ("id") DO NOTHING;
+
+-- Data for: public.coupon_usages (1 rows)
+INSERT INTO public.coupon_usages ("coupon", "discount_amount", "id", "order_id", "used_at", "user") VALUES ('4xq1mkyh44t2lq0', 100, '057986jnytl3427', 'h8h2j7w8jw540ed', '2026-09-28T07:13:40.259Z', 'f16952pn2354szz') ON CONFLICT ("id") DO NOTHING;
+
+-- Data for: public.carts (2 rows)
+INSERT INTO public.carts ("id", "status", "user") VALUES ('s37emt20kv198js', 'active', '2t243534z0gmfuh') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.carts ("id", "status", "user") VALUES ('1q9y8c8mq4557e1', 'active', 'ubfrjphv70np53s') ON CONFLICT ("id") DO NOTHING;
+
+-- Data for: public.cart_items (1 rows)
+INSERT INTO public.cart_items ("cart", "id", "product", "quantity", "unit_price", "user", "variant") VALUES ('1q9y8c8mq4557e1', '2rnm1kuj7g3m8o6', 't3e0r4d88382z6p', 1, 3700, 'ubfrjphv70np53s', 'rw06l19o18zv0q5') ON CONFLICT ("id") DO NOTHING;
+
+-- Data for: public.orders (3 rows)
+INSERT INTO public.orders ("coupon", "courier_name", "discount_amount", "grand_total", "id", "notes", "order_number", "order_status", "payment_method", "payment_status", "shipping_address_snapshot", "shipping_date", "shipping_fee", "subtotal", "tracking_number", "user") VALUES ('4xq1mkyh44t2lq0', '', 100, 3600, 'h8h2j7w8jw540ed', 'Customer note test', 'CT-ORD-20260928-6667', 'pending_payment', 'bank_transfer', 'pending', '{"address_line":"123 Sukhumvit 55","district":"Watthana","notes":"Leave at lobby","phone":"081-111-2222","postal_code":"10110","province":"Bangkok","recipient_name":"Test User","subdistrict":"Thonglor"}'::jsonb, '', 0, 3700, '', 'f16952pn2354szz') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.orders ("coupon", "courier_name", "discount_amount", "grand_total", "id", "notes", "order_number", "order_status", "payment_method", "payment_status", "shipping_address_snapshot", "shipping_date", "shipping_fee", "subtotal", "tracking_number", "user") VALUES ('', '', 0, 3300, '030197ki9330i2o', 'คนด', 'CT-ORD-20260928-1561', 'pending_payment', 'bank_transfer', 'pending', '{"address_line":"อาคาร16","district":"สุรินทร์","notes":"คนด","phone":"066666666","postal_code":"32140","province":"กรุงเทพมหานคร","recipient_name":"C-TOWN Administrator","subdistrict":"กังแอน"}'::jsonb, '', 0, 3300, '', '2t243534z0gmfuh') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.orders ("coupon", "courier_name", "discount_amount", "grand_total", "id", "notes", "order_number", "order_status", "payment_method", "payment_status", "shipping_address_snapshot", "shipping_date", "shipping_fee", "subtotal", "tracking_number", "user") VALUES ('', '', 0, 3700, 'rnvlw3dd8pdvai9', '????????????', 'CT-ORD-20260928-3873', 'pending_payment', 'bank_transfer', 'pending', '{"address_line":"123/45 ???????????","district":"???????","phone":"0812345678","postal_code":"10110","province":"?????????????","recipient_name":"????????????????","subdistrict":"???????"}'::jsonb, '', 0, 3700, '', '2t243534z0gmfuh') ON CONFLICT ("id") DO NOTHING;
+
+-- Data for: public.order_items (3 rows)
+INSERT INTO public.order_items ("color", "id", "image_snapshot", "line_total", "order", "product_id", "product_name_snapshot", "quantity", "size", "sku", "unit_price", "variant") VALUES ('White', '4514ixfe775o8vc', '/images/products/nike_af1_white.jpg', 3700, 'h8h2j7w8jw540ed', 't3e0r4d88382z6p', 'Nike Air Force 1 ''07', 1, '36', 'NIKE-A-WHI-SZ36', 3700, 'rw06l19o18zv0q5') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.order_items ("color", "id", "image_snapshot", "line_total", "order", "product_id", "product_name_snapshot", "quantity", "size", "sku", "unit_price", "variant") VALUES ('Classic Black', 'x14810h1v9y2j8f', '/images/products/converse_chuck_black.jpg', 3300, '030197ki9330i2o', 'vi3bo1003u2b1fx', 'Converse Chuck 70 High', 1, '36', 'CONVER-CLA-SZ36', 3300, 'g57by03542m3vz8') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.order_items ("color", "id", "image_snapshot", "line_total", "order", "product_id", "product_name_snapshot", "quantity", "size", "sku", "unit_price", "variant") VALUES ('White', 'bj020l7n2748v3k', '/images/products/nike_af1_white.jpg', 3700, 'rnvlw3dd8pdvai9', 't3e0r4d88382z6p', 'Nike Air Force 1 ''07', 1, '36', 'NIKE-A-WHI-SZ36', 3700, 'rw06l19o18zv0q5') ON CONFLICT ("id") DO NOTHING;
+
+-- Data for: public.shipments (3 rows)
+INSERT INTO public.shipments ("courier_name", "estimated_delivery_date", "id", "order", "shipping_date", "status", "tracking_number", "tracking_url") VALUES ('', '', '65d93be7z3g7t0b', 'h8h2j7w8jw540ed', '', 'pending_payment', '', '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.shipments ("courier_name", "estimated_delivery_date", "id", "order", "shipping_date", "status", "tracking_number", "tracking_url") VALUES ('', '', 'a7is9smn4p74f3o', '030197ki9330i2o', '', 'pending_payment', '', '') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.shipments ("courier_name", "estimated_delivery_date", "id", "order", "shipping_date", "status", "tracking_number", "tracking_url") VALUES ('', '', 'tc682j36c2z656c', 'rnvlw3dd8pdvai9', '', 'pending_payment', '', '') ON CONFLICT ("id") DO NOTHING;
+
+-- Data for: public.shipment_events (3 rows)
+INSERT INTO public.shipment_events ("description", "event_time", "id", "location", "order", "shipment", "status") VALUES ('คำสั่งซื้อถูกสร้างในระบบเรียบร้อยแล้ว รอการชำระเงิน', '2026-09-28T07:13:40.260Z', '8p553wq3y698bzf', 'C-TOWN Fulfillment Center', 'h8h2j7w8jw540ed', '65d93be7z3g7t0b', 'pending_payment') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.shipment_events ("description", "event_time", "id", "location", "order", "shipment", "status") VALUES ('คำสั่งซื้อถูกสร้างในระบบเรียบร้อยแล้ว รอการชำระเงิน', '2026-09-28T07:52:04.413Z', 'e5r11n451g8zl36', 'C-TOWN Fulfillment Center', '030197ki9330i2o', 'a7is9smn4p74f3o', 'pending_payment') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.shipment_events ("description", "event_time", "id", "location", "order", "shipment", "status") VALUES ('คำสั่งซื้อถูกสร้างในระบบเรียบร้อยแล้ว รอการชำระเงิน', '2026-09-28T07:53:35.758Z', 'ku5t7yr3nc4izjp', 'C-TOWN Fulfillment Center', 'rnvlw3dd8pdvai9', 'tc682j36c2z656c', 'pending_payment') ON CONFLICT ("id") DO NOTHING;
+
+-- Data for: public.stock_movements (58 rows)
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'c68mo7g10v89t96', 'PURCHASE_IN', 'Initial inventory opening stock', 't3e0r4d88382z6p', 8, 'INIT-BATCH-2026', 'NIKE-A-WHI-SZ36', '2qprb5f8nhi3y36', 2400, 'rw06l19o18zv0q5') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', '44fu37g8y3rjj12', 'PURCHASE_IN', 'Initial inventory opening stock', 't3e0r4d88382z6p', 13, 'INIT-BATCH-2026', 'NIKE-A-WHI-SZ37', '2qprb5f8nhi3y36', 2400, 'w4r26mq3g793h7d') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'f01tdfes27ig196', 'PURCHASE_IN', 'Initial inventory opening stock', 't3e0r4d88382z6p', 10, 'INIT-BATCH-2026', 'NIKE-A-WHI-SZ38', '2qprb5f8nhi3y36', 2400, '22b9254f18i8nlp') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', '517scy9awt353or', 'PURCHASE_IN', 'Initial inventory opening stock', 't3e0r4d88382z6p', 12, 'INIT-BATCH-2026', 'NIKE-A-WHI-SZ39', '2qprb5f8nhi3y36', 2400, '6gf46lhxwnnkd8g') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'vb91844sj19g273', 'PURCHASE_IN', 'Initial inventory opening stock', 't3e0r4d88382z6p', 8, 'INIT-BATCH-2026', 'NIKE-A-WHI-SZ40', '2qprb5f8nhi3y36', 2400, 'y7fun97408m044w') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'ph0o614x470qi71', 'PURCHASE_IN', 'Initial inventory opening stock', 't3e0r4d88382z6p', 12, 'INIT-BATCH-2026', 'NIKE-A-WHI-SZ41', '2qprb5f8nhi3y36', 2400, 'tn1961966097611') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'zxd1410e3m68b34', 'PURCHASE_IN', 'Initial inventory opening stock', 't3e0r4d88382z6p', 10, 'INIT-BATCH-2026', 'NIKE-A-WHI-SZ42', '2qprb5f8nhi3y36', 2400, 'g99xfy791o602z4') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', '11q65f3t34505wv', 'PURCHASE_IN', 'Initial inventory opening stock', 't3e0r4d88382z6p', 12, 'INIT-BATCH-2026', 'NIKE-A-WHI-SZ43', '2qprb5f8nhi3y36', 2400, 'ze3083yo0iezi9b') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', '73x747p9hu6b40z', 'PURCHASE_IN', 'Initial inventory opening stock', 't3e0r4d88382z6p', 11, 'INIT-BATCH-2026', 'NIKE-A-WHI-SZ44', '2qprb5f8nhi3y36', 2400, 'kt2w79l02yjgx5o') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', '2f0i095zh604276', 'PURCHASE_IN', 'Initial inventory opening stock', 't3e0r4d88382z6p', 14, 'INIT-BATCH-2026', 'NIKE-A-ROS-SZ36', '2qprb5f8nhi3y36', 2500, '85jx8pa2x34ya9c') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', '2fy79x3dgmuka7b', 'PURCHASE_IN', 'Initial inventory opening stock', 't3e0r4d88382z6p', 11, 'INIT-BATCH-2026', 'NIKE-A-ROS-SZ37', '2qprb5f8nhi3y36', 2500, 'p26k785mbb69983') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'e988k4xo9a2197i', 'PURCHASE_IN', 'Initial inventory opening stock', 't3e0r4d88382z6p', 12, 'INIT-BATCH-2026', 'NIKE-A-ROS-SZ38', '2qprb5f8nhi3y36', 2500, '75rm2310wda23pu') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', '1qahc42b1a5o2yo', 'PURCHASE_IN', 'Initial inventory opening stock', 't3e0r4d88382z6p', 10, 'INIT-BATCH-2026', 'NIKE-A-ROS-SZ39', '2qprb5f8nhi3y36', 2500, '0y1439557mdf2d6') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', '529601j71315fp4', 'PURCHASE_IN', 'Initial inventory opening stock', 't3e0r4d88382z6p', 12, 'INIT-BATCH-2026', 'NIKE-A-ROS-SZ40', '2qprb5f8nhi3y36', 2500, '3tqnif8sjlxxj12') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', '0n8y12y7ou77yz1', 'PURCHASE_IN', 'Initial inventory opening stock', 't3e0r4d88382z6p', 11, 'INIT-BATCH-2026', 'NIKE-A-ROS-SZ41', '2qprb5f8nhi3y36', 2500, '248p36b20779s5c') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'b1i9rtn624vo5b3', 'PURCHASE_IN', 'Initial inventory opening stock', 't3e0r4d88382z6p', 10, 'INIT-BATCH-2026', 'NIKE-A-TRI-SZ38', '2qprb5f8nhi3y36', 2400, '19469f26169r94i') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', '26k8uhjrj632026', 'PURCHASE_IN', 'Initial inventory opening stock', 't3e0r4d88382z6p', 11, 'INIT-BATCH-2026', 'NIKE-A-TRI-SZ39', '2qprb5f8nhi3y36', 2400, 'mjb2ks5f317u4hn') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'q2285n5l3evh8zb', 'PURCHASE_IN', 'Initial inventory opening stock', 't3e0r4d88382z6p', 13, 'INIT-BATCH-2026', 'NIKE-A-TRI-SZ40', '2qprb5f8nhi3y36', 2400, 'l44m18858bhlp86') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'f73ll2md62zf133', 'PURCHASE_IN', 'Initial inventory opening stock', 't3e0r4d88382z6p', 8, 'INIT-BATCH-2026', 'NIKE-A-TRI-SZ41', '2qprb5f8nhi3y36', 2400, '3u881ff13d02s38') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', '46g11ha5l4ktn36', 'PURCHASE_IN', 'Initial inventory opening stock', 't3e0r4d88382z6p', 12, 'INIT-BATCH-2026', 'NIKE-A-TRI-SZ42', '2qprb5f8nhi3y36', 2400, 'r6l03696818z7xk') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'zmtr1hxmtf54l2n', 'PURCHASE_IN', 'Initial inventory opening stock', 't3e0r4d88382z6p', 14, 'INIT-BATCH-2026', 'NIKE-A-TRI-SZ43', '2qprb5f8nhi3y36', 2400, 'a8oxzg16s3vtwof') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'brc6yix9o0c38j8', 'PURCHASE_IN', 'Initial inventory opening stock', 't3e0r4d88382z6p', 14, 'INIT-BATCH-2026', 'NIKE-A-TRI-SZ44', '2qprb5f8nhi3y36', 2400, '0w2p3mr574e63o3') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'jqu3g86j7v32g6b', 'PURCHASE_IN', 'Initial inventory opening stock', 't3e0r4d88382z6p', 15, 'INIT-BATCH-2026', 'NIKE-A-TRI-SZ45', '2qprb5f8nhi3y36', 2400, 'xk7651gq93s5k8k') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', '1d69a4s1o7ab15x', 'PURCHASE_IN', 'Initial inventory opening stock', '80615384541l1aa', 9, 'INIT-BATCH-2026', 'ADIDAS-CLO-SZ36', '2qprb5f8nhi3y36', 2500, '5eivd91357m55f6') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'c36r7l8yejfd5ee', 'PURCHASE_IN', 'Initial inventory opening stock', '80615384541l1aa', 8, 'INIT-BATCH-2026', 'ADIDAS-CLO-SZ37', '2qprb5f8nhi3y36', 2500, 'a1u8vt6fs16n52p') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', '7w8zgx8kn6b3662', 'PURCHASE_IN', 'Initial inventory opening stock', '80615384541l1aa', 9, 'INIT-BATCH-2026', 'ADIDAS-CLO-SZ38', '2qprb5f8nhi3y36', 2500, '6541sqex4o2orgc') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'y2iqbx61hex6288', 'PURCHASE_IN', 'Initial inventory opening stock', '80615384541l1aa', 9, 'INIT-BATCH-2026', 'ADIDAS-CLO-SZ39', '2qprb5f8nhi3y36', 2500, 'n4n61vhj7768458') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', '809o40a98etdp9p', 'PURCHASE_IN', 'Initial inventory opening stock', '80615384541l1aa', 10, 'INIT-BATCH-2026', 'ADIDAS-CLO-SZ40', '2qprb5f8nhi3y36', 2500, 'l87pkx28sr1727h') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', '9h0y8nd2m513d0w', 'PURCHASE_IN', 'Initial inventory opening stock', '80615384541l1aa', 8, 'INIT-BATCH-2026', 'ADIDAS-CLO-SZ41', '2qprb5f8nhi3y36', 2500, '89n4yi27hyc3p6k') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'w68x34357t4776h', 'PURCHASE_IN', 'Initial inventory opening stock', '80615384541l1aa', 9, 'INIT-BATCH-2026', 'ADIDAS-CLO-SZ42', '2qprb5f8nhi3y36', 2500, '9flg4chg4n7a0h4') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'c63829d5ik0np57', 'PURCHASE_IN', 'Initial inventory opening stock', '80615384541l1aa', 12, 'INIT-BATCH-2026', 'ADIDAS-CLO-SZ43', '2qprb5f8nhi3y36', 2500, '43e2m0lp1jtgh33') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'nt6q0a23nzdu8hd', 'PURCHASE_IN', 'Initial inventory opening stock', '2wf6542jhxbpzw0', 14, 'INIT-BATCH-2026', 'NEW-BA-WHI-SZ36', '2qprb5f8nhi3y36', 2800, '51w8q259471tluv') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', '980z2y5pmuqf7w5', 'PURCHASE_IN', 'Initial inventory opening stock', '2wf6542jhxbpzw0', 15, 'INIT-BATCH-2026', 'NEW-BA-WHI-SZ37', '2qprb5f8nhi3y36', 2800, 'a247889di5unwiz') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'uyph18y755mc37a', 'PURCHASE_IN', 'Initial inventory opening stock', '2wf6542jhxbpzw0', 10, 'INIT-BATCH-2026', 'NEW-BA-WHI-SZ38', '2qprb5f8nhi3y36', 2800, '56fhdn3za87obb3') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', '3jz6483m02z2u08', 'PURCHASE_IN', 'Initial inventory opening stock', '2wf6542jhxbpzw0', 14, 'INIT-BATCH-2026', 'NEW-BA-WHI-SZ39', '2qprb5f8nhi3y36', 2800, 't2rm25beoi2mbqb') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'e6u5f6yd61j9350', 'PURCHASE_IN', 'Initial inventory opening stock', '2wf6542jhxbpzw0', 13, 'INIT-BATCH-2026', 'NEW-BA-WHI-SZ40', '2qprb5f8nhi3y36', 2800, '5y5f3s34p2e76cj') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'd293jf092xc5r16', 'PURCHASE_IN', 'Initial inventory opening stock', '2wf6542jhxbpzw0', 10, 'INIT-BATCH-2026', 'NEW-BA-WHI-SZ41', '2qprb5f8nhi3y36', 2800, '0032t42dq89ny67') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'nklar5gj4t0r042', 'PURCHASE_IN', 'Initial inventory opening stock', '2wf6542jhxbpzw0', 15, 'INIT-BATCH-2026', 'NEW-BA-WHI-SZ42', '2qprb5f8nhi3y36', 2800, 'n82601815h2u5mp') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', '12y09ix2clzif90', 'PURCHASE_IN', 'Initial inventory opening stock', '2wf6542jhxbpzw0', 9, 'INIT-BATCH-2026', 'NEW-BA-WHI-SZ43', '2qprb5f8nhi3y36', 2800, 'zp55sd2g1qyhct1') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', '79x486q5ll0qgur', 'PURCHASE_IN', 'Initial inventory opening stock', '2wf6542jhxbpzw0', 15, 'INIT-BATCH-2026', 'NEW-BA-WHI-SZ44', '2qprb5f8nhi3y36', 2800, 'y8dc6lk4065kszh') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', '6hx4m35qk50408y', 'PURCHASE_IN', 'Initial inventory opening stock', '1z0000jxdn85et7', 11, 'INIT-BATCH-2026', 'AIR-JO-MET-SZ36', '2qprb5f8nhi3y36', 3100, '7sf25o6mc8850bm') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'c35a0495k7chkqu', 'PURCHASE_IN', 'Initial inventory opening stock', '1z0000jxdn85et7', 9, 'INIT-BATCH-2026', 'AIR-JO-MET-SZ37', '2qprb5f8nhi3y36', 3100, 'awnfrbqdv602643') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'gthh1do8lt1gi1a', 'PURCHASE_IN', 'Initial inventory opening stock', '1z0000jxdn85et7', 15, 'INIT-BATCH-2026', 'AIR-JO-MET-SZ38', '2qprb5f8nhi3y36', 3100, '2v32q496yu7v4f1') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', '3p0ppudd6jlx832', 'PURCHASE_IN', 'Initial inventory opening stock', '1z0000jxdn85et7', 9, 'INIT-BATCH-2026', 'AIR-JO-MET-SZ39', '2qprb5f8nhi3y36', 3100, 'v59134zioom9210') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'lop339r4rqcujr0', 'PURCHASE_IN', 'Initial inventory opening stock', '1z0000jxdn85et7', 8, 'INIT-BATCH-2026', 'AIR-JO-MET-SZ40', '2qprb5f8nhi3y36', 3100, 'c1932b3x53a4ev8') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', '28qu823wcb28di1', 'PURCHASE_IN', 'Initial inventory opening stock', '1z0000jxdn85et7', 11, 'INIT-BATCH-2026', 'AIR-JO-MET-SZ41', '2qprb5f8nhi3y36', 3100, '9a7pqwzqn3mlez9') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'ai34aan63x782zk', 'PURCHASE_IN', 'Initial inventory opening stock', 'vi3bo1003u2b1fx', 11, 'INIT-BATCH-2026', 'CONVER-CLA-SZ36', '2qprb5f8nhi3y36', 2100, 'g57by03542m3vz8') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', '8vmo025qjg8p6nl', 'PURCHASE_IN', 'Initial inventory opening stock', 'vi3bo1003u2b1fx', 12, 'INIT-BATCH-2026', 'CONVER-CLA-SZ37', '2qprb5f8nhi3y36', 2100, '04n175miv9yy8o7') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'r04si7wd846yby9', 'PURCHASE_IN', 'Initial inventory opening stock', 'vi3bo1003u2b1fx', 15, 'INIT-BATCH-2026', 'CONVER-CLA-SZ38', '2qprb5f8nhi3y36', 2100, 'y03x654dei7g95h') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'l96zfq2sf80wl82', 'PURCHASE_IN', 'Initial inventory opening stock', 'vi3bo1003u2b1fx', 10, 'INIT-BATCH-2026', 'CONVER-CLA-SZ39', '2qprb5f8nhi3y36', 2100, 'o5rxdskk104wbd6') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'dlthdz6x9s9yz3h', 'PURCHASE_IN', 'Initial inventory opening stock', 'vi3bo1003u2b1fx', 14, 'INIT-BATCH-2026', 'CONVER-CLA-SZ40', '2qprb5f8nhi3y36', 2100, 'oaa00atc5983o54') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'd0ak1n0r88kg3a3', 'PURCHASE_IN', 'Initial inventory opening stock', 'vi3bo1003u2b1fx', 10, 'INIT-BATCH-2026', 'CONVER-CLA-SZ41', '2qprb5f8nhi3y36', 2100, '31wz314101r46bo') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'u565nqhxp646rhc', 'PURCHASE_IN', 'Initial inventory opening stock', 'vi3bo1003u2b1fx', 12, 'INIT-BATCH-2026', 'CONVER-CLA-SZ42', '2qprb5f8nhi3y36', 2100, 'l8tn906hl775paw') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'hmw49fy117toaip', 'PURCHASE_IN', 'Initial inventory opening stock', 'vi3bo1003u2b1fx', 11, 'INIT-BATCH-2026', 'CONVER-CLA-SZ43', '2qprb5f8nhi3y36', 2100, '426m5f617rq6405') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('', 'gr2b95z4oy32m60', 'PURCHASE_IN', 'Initial inventory opening stock', 'vi3bo1003u2b1fx', 12, 'INIT-BATCH-2026', 'CONVER-CLA-SZ44', '2qprb5f8nhi3y36', 2100, 'vk95e57h6a8cp5b') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('f16952pn2354szz', '26t58p3vj23461e', 'SALE_OUT', 'Sale Order CT-ORD-20260928-6667', 't3e0r4d88382z6p', 1, 'CT-ORD-20260928-6667', 'NIKE-A-WHI-SZ36', '', 2400, 'rw06l19o18zv0q5') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('2t243534z0gmfuh', '77q1k0i36t6fc9v', 'SALE_OUT', 'Sale Order CT-ORD-20260928-1561', 'vi3bo1003u2b1fx', 1, 'CT-ORD-20260928-1561', 'CONVER-CLA-SZ36', '', 2100, 'g57by03542m3vz8') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.stock_movements ("created_by", "id", "movement_type", "note", "product", "quantity", "reference_number", "sku", "supplier", "unit_cost", "variant") VALUES ('2t243534z0gmfuh', 'n5217f4tl972d52', 'SALE_OUT', 'Sale Order CT-ORD-20260928-3873', 't3e0r4d88382z6p', 1, 'CT-ORD-20260928-3873', 'NIKE-A-WHI-SZ36', '', 2400, 'rw06l19o18zv0q5') ON CONFLICT ("id") DO NOTHING;
+
+-- Data for: public.conversations (1 rows)
+INSERT INTO public.conversations ("id", "last_message", "last_message_at", "status", "subject", "unread_admin_count", "unread_customer_count", "user") VALUES ('9471wh0a58guf2c', '??????????????????? Nike Air Force 1 ????? ???? 41 ??????????????????????????? ?????????????????? 14:00 ?. ?????????????????????????', '2026-09-28T07:18:09.762Z', 'open', 'การสอบถามสินค้าและบริการทั่วไป', 0, 1, 'f16952pn2354szz') ON CONFLICT ("id") DO NOTHING;
+
+-- Data for: public.messages (2 rows)
+INSERT INTO public.messages ("attachment_image", "conversation", "id", "is_read", "message_text", "read_at", "sender_id", "sender_type") VALUES ('', '9471wh0a58guf2c', 'lm175mv8ft6r3s1', FALSE, '?????????? ??????????? Nike Air Force 1 ????? ???? 41 ?????????????????????', '', 'f16952pn2354szz', 'CUSTOMER') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.messages ("attachment_image", "conversation", "id", "is_read", "message_text", "read_at", "sender_id", "sender_type") VALUES ('', '9471wh0a58guf2c', 'w0w673k1p825sfh', FALSE, '??????????????????? Nike Air Force 1 ????? ???? 41 ??????????????????????????? ?????????????????? 14:00 ?. ?????????????????????????', '', 'z3i4k8umey0mq87', 'ADMIN') ON CONFLICT ("id") DO NOTHING;
+
+-- Data for: public.store_settings (1 rows)
+INSERT INTO public.store_settings ("address", "bank_accounts_json", "banner_image", "business_hours", "currency", "default_shipping_fee", "email", "facebook_page", "free_shipping_min_order", "id", "instagram_handle", "line_id", "logo", "notification_settings_json", "phone", "privacy_policy", "pronunciation", "return_policy", "store_full_name", "store_name", "tax_settings_json", "terms_of_service", "welcome_message") VALUES ('88 C-TOWN Complex, Sukhumvit Road, Khlong Toei, Bangkok 10110', '[{"account_name":"C-TOWN SNEAKER STORE CO., LTD.","account_number":"088-2-33445-5","bank":"KBANK (ธนาคารกสิกรไทย)","branch":"Siam Paragon Branch","promptpay_id":"0105566001234"},{"account_name":"C-TOWN SNEAKER STORE CO., LTD.","account_number":"111-4-55667-8","bank":"SCB (ธนาคารไทยพาณิชย์)","branch":"EmQuartier Branch","promptpay_id":"0105566001234"}]'::jsonb, '', 'Everyday 10:00 - 21:00', 'THB', 60, 'contact@c-town-sneaker.com', 'facebook.com/ctownsneakers', 2500, 'dp8y60uuupu9vrg', '@ctown.sneakers', '@ctown_sneakers', '', NULL, '02-888-9999', 'ทางร้านเก็บรักษาข้อมูลของลูกค้าตามมาตรฐานความปลอดภัย ไม่เปิดเผยข้อมูลส่วนบุคคลแก่บุคคลภายนอก', 'ซี-ทาวน์', 'รับเปลี่ยนหรือคืนสินค้าภายใน 7 วัน นับจากวันที่ได้รับพัสดุ สินค้าต้องอยู่ในสภาพสมบูรณ์ กล่องและป้ายแท็กครบถ้วน', 'C-TOWN SNEAKER STORE', 'C-TOWN', NULL, 'เงื่อนไขการสั่งซื้อและรับประกันสินค้าของแท้ 100% จาก C-TOWN SNEAKER STORE', 'Step Into Your Style - C-TOWN ร้านรองเท้าผ้าใบสตรีทแวร์ระดับพรีเมียม') ON CONFLICT ("id") DO NOTHING;
+
+-- Data for: public.audit_logs (3 rows)
+INSERT INTO public.audit_logs ("action", "entity_id", "entity_type", "id", "ip_address", "new_values_json", "old_values_json", "user_agent", "user_id") VALUES ('ORDER_CREATED', 'h8h2j7w8jw540ed', 'orders', 'erz71r62r56x44d', '', '{"grand_total":3600,"items_count":1,"order_number":"CT-ORD-20260928-6667"}'::jsonb, NULL, '', 'f16952pn2354szz') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.audit_logs ("action", "entity_id", "entity_type", "id", "ip_address", "new_values_json", "old_values_json", "user_agent", "user_id") VALUES ('ORDER_CREATED', '030197ki9330i2o', 'orders', 'zclbz92zb6zxo6k', '', '{"grand_total":3300,"items_count":1,"order_number":"CT-ORD-20260928-1561"}'::jsonb, NULL, '', '2t243534z0gmfuh') ON CONFLICT ("id") DO NOTHING;
+INSERT INTO public.audit_logs ("action", "entity_id", "entity_type", "id", "ip_address", "new_values_json", "old_values_json", "user_agent", "user_id") VALUES ('ORDER_CREATED', 'rnvlw3dd8pdvai9', 'orders', 'y78853q24ja5mqp', '', '{"grand_total":3700,"items_count":1,"order_number":"CT-ORD-20260928-3873"}'::jsonb, NULL, '', '2t243534z0gmfuh') ON CONFLICT ("id") DO NOTHING;
+

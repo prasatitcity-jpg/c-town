@@ -168,7 +168,7 @@ export default function AdminChatPage() {
 
               <div className="admin-messages-area">
                 {messages.map(m => {
-                  const isStaff = m.sender_role === 'ADMIN' || m.sender_id === user?.id;
+                  const isStaff = m.sender_role === 'ADMIN' || m.sender_type === 'ADMIN' || m.sender_id === user?.id;
                   return (
                     <div key={m.id} className={`admin-msg-row ${isStaff ? 'from-staff' : 'from-client'}`}>
                       <div className="msg-bubble-wrap">

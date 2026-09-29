@@ -564,31 +564,37 @@ function createUniversalCollection(collectionName) {
     },
 
     subscribe(topic, callback) {
-      if (!supabase) return () => {};
-      try {
-        const channel = supabase
-          .channel(`rt_${collectionName}_${Date.now()}`)
-          .on(
-            'postgres_changes',
-            { event: '*', schema: 'public', table: collectionName },
-            payload => {
-              const rec = payload.new || payload.old || {};
-              rec.created = rec.created || rec.created_at;
-              rec.updated = rec.updated || rec.updated_at;
-              callback({
-                action: payload.eventType.toLowerCase(),
-                record: rec
-              });
-            }
-          )
-          .subscribe();
-
-        return () => {
-          supabase.removeChannel(channel);
-        };
-      } catch (_) {
-        return () => {};
+      let channel = null;
+      if (supabase) {
+        try {
+          channel = supabase
+            .channel(`rt_${collectionName}_${Date.now()}`)
+            .on(
+              'postgres_changes',
+              { event: '*', schema: 'public', table: collectionName },
+              payload => {
+                const rec = payload.new || payload.old || {};
+                rec.created = rec.created || rec.created_at;
+                rec.updated = rec.updated || rec.updated_at;
+                callback({
+                  action: payload.eventType.toLowerCase(),
+                  record: rec
+                });
+              }
+            )
+            .subscribe();
+        } catch (_) {}
       }
+
+      const unsub = () => {
+        if (supabase && channel) {
+          try { supabase.removeChannel(channel); } catch (_) {}
+        }
+      };
+      unsub.then = function (onResolve) {
+        return Promise.resolve(unsub).then(onResolve);
+      };
+      return unsub;
     },
 
     // Auth methods for users collection

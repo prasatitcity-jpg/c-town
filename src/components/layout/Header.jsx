@@ -63,19 +63,10 @@ export default function Header({ onSearch }) {
   const navLinks = [
     { to: '/', label: 'หน้าแรก' },
     { to: '/products', label: 'สินค้าทั้งหมด' },
-    { to: '/cart', label: 'ตะกร้าสินค้าหน้าร้าน', icon: <ShoppingBag size={16} />, badge: totalItems },
+    { to: '/cart', label: 'ตะกร้าสินค้า', icon: <ShoppingBag size={16} />, badge: totalItems },
     { to: '/promotions', label: 'โปรโมชั่น' },
     { to: '/track-order', label: 'ติดตามคำสั่งซื้อ' },
-  ];
-
-  const adminNavItems = [
-    { to: '/admin', label: 'แดชบอร์ดสรุปผล', icon: '📊' },
-    { to: '/admin/orders', label: 'จัดการคำสั่งซื้อและสลิป', icon: '📦' },
-    { to: '/admin/products', label: 'สินค้าและสต็อก', icon: '👟' },
-    { to: '/admin/stock', label: 'ประวัติเคลื่อนไหวสต็อก', icon: '📈' },
-    { to: '/admin/coupons', label: 'คูปองและโปรโมชั่น', icon: '🏷️' },
-    { to: '/admin/chat', label: 'ศูนย์ตอบแชทลูกค้า', icon: '💬' },
-    { to: '/cart', label: 'ตะกร้าสินค้าหน้าร้าน', icon: '🛒' },
+    { to: '/contact', label: 'ติดต่อเรา' },
   ];
 
   return (
@@ -104,7 +95,7 @@ export default function Header({ onSearch }) {
             <span className="logo-town">-TOWN</span>
           </Link>
 
-          {/* Desktop Nav */}
+          {/* Desktop Nav - Customer Only */}
           <nav className="header-nav desktop-nav">
             {navLinks.map(link => (
               <Link
@@ -117,72 +108,25 @@ export default function Header({ onSearch }) {
                 {link.badge > 0 && <span className="nav-badge-pill" style={{ marginLeft: '6px', background: '#EF4444', color: '#fff', fontSize: '11px', padding: '2px 7px', borderRadius: '10px', fontWeight: 'bold' }}>{link.badge}</span>}
               </Link>
             ))}
-
-            {/* Admin Management Dropdown */}
-            <div className="nav-dropdown-wrapper" style={{ position: 'relative' }} onMouseLeave={() => setAdminDropdownOpen(false)}>
-              <button
-                type="button"
-                className={`nav-link admin-nav-toggle-btn${location.pathname.startsWith('/admin') ? ' active' : ''}`}
-                onClick={() => setAdminDropdownOpen(!adminDropdownOpen)}
-                id="btn-nav-admin-dropdown"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', cursor: 'pointer', background: 'transparent', border: 'none', font: 'inherit', color: 'inherit' }}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className="nav-link admin-pill-link"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: '#FFF1F2',
+                  color: '#E11D48',
+                  fontWeight: '700',
+                  borderRadius: '20px',
+                  padding: '5px 14px',
+                  border: '1px solid #FFE4E6'
+                }}
               >
-                <span>⚙️ ระบบจัดการร้าน</span>
-                <ChevronDown size={14} style={{ transform: adminDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-              </button>
-
-              {adminDropdownOpen && (
-                <div
-                  className="nav-admin-dropdown-menu"
-                  style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    minWidth: '240px',
-                    background: '#ffffff',
-                    borderRadius: '12px',
-                    boxShadow: '0 12px 30px rgba(0,0,0,0.15)',
-                    padding: '8px 0',
-                    zIndex: 1000,
-                    border: '1px solid #f1f5f9',
-                  }}
-                >
-                  <div style={{ padding: '8px 16px 6px', fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    เมนูระบบจัดการ & หลังบ้าน
-                  </div>
-                  {adminNavItems.map(item => (
-                    <Link
-                      key={item.to}
-                      to={item.to}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        padding: '10px 16px',
-                        color: location.pathname === item.to ? '#ec4899' : '#334155',
-                        fontWeight: location.pathname === item.to ? 600 : 500,
-                        textDecoration: 'none',
-                        fontSize: '14px',
-                        transition: 'background 0.15s',
-                        background: location.pathname === item.to ? '#fdf2f8' : 'transparent',
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = location.pathname === item.to ? '#fdf2f8' : 'transparent'; }}
-                      onClick={(e) => {
-                        setAdminDropdownOpen(false);
-                        if (item.to.startsWith('/admin') && !isAdmin) {
-                          e.preventDefault();
-                          setPinModalOpen(true);
-                        }
-                      }}
-                    >
-                      <span style={{ fontSize: '16px' }}>{item.icon}</span>
-                      <span>{item.label}</span>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
+                ⚙️ หลังบ้าน Admin
+              </Link>
+            )}
           </nav>
 
           {/* Right Corner: Search, Cart, Login / Account */}
@@ -358,25 +302,20 @@ export default function Header({ onSearch }) {
                   </Link>
                 ))}
 
-                <div style={{ padding: '12px 16px 6px', fontSize: '11px', fontWeight: 700, color: '#ec4899', textTransform: 'uppercase' }}>ระบบจัดการร้าน & หลังบ้าน</div>
-                {adminNavItems.map(item => (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    className={`mobile-nav-link ${location.pathname === item.to ? 'active' : ''}`}
-                    onClick={(e) => {
-                      setMobileOpen(false);
-                      if (item.to.startsWith('/admin') && !isAdmin) {
-                        e.preventDefault();
-                        setPinModalOpen(true);
-                      }
-                    }}
-                    style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
-                  >
-                    <span>{item.icon}</span>
-                    <span>{item.label}</span>
-                  </Link>
-                ))}
+                {isAdmin && (
+                  <>
+                    <div style={{ padding: '12px 16px 6px', fontSize: '11px', fontWeight: 700, color: '#ec4899', textTransform: 'uppercase' }}>ระบบหลังบ้าน</div>
+                    <Link
+                      to="/admin"
+                      className="mobile-nav-link"
+                      onClick={() => setMobileOpen(false)}
+                      style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ec4899', fontWeight: 'bold' }}
+                    >
+                      <span>⚙️</span>
+                      <span>แดชบอร์ดจัดการร้าน (Admin)</span>
+                    </Link>
+                  </>
+                )}
 
                 {isLoggedIn && (
                   <>

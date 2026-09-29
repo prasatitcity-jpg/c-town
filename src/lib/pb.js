@@ -39,14 +39,33 @@ function saveStoredAuth(token, model) {
 function applyPbFilterToSupabase(query, filterStr) {
   if (!filterStr || typeof filterStr !== 'string') return query;
 
+  // Check for grouped OR clauses like `(a ~ "x" || b ~ "y")`
+  const orGroupMatch = filterStr.match(/\(([^)]+)\)/);
+  if (orGroupMatch) {
+    const inner = orGroupMatch[1];
+    const orParts = inner.split(/\s*\|\|\s*/);
+    const subConds = [];
+    for (const op of orParts) {
+      const m = op.trim().match(/^([\w_]+)\s*(=|!=|>|>=|<|<=|~)\s*(.+)$/);
+      if (m) {
+        const col = m[1];
+        let val = m[3].trim().replace(/^['"]|['"]$/g, '');
+        if (m[2] === '~') subConds.push(`${col}.ilike.%${val}%`);
+        else if (m[2] === '=') subConds.push(`${col}.eq.${val}`);
+      }
+    }
+    if (subConds.length > 0) {
+      query = query.or(subConds.join(','));
+    }
+    filterStr = filterStr.replace(orGroupMatch[0], '').replace(/^\s*&&\s*|\s*&&\s*$/g, '');
+  }
+
   // Split on " && "
   const clauses = filterStr.split(/\s*&&\s*/);
   for (const clause of clauses) {
     const trimmed = clause.trim();
     if (!trimmed || trimmed === '1=1') continue;
 
-    // Match field operator value
-    // e.g. status = "active", is_bestseller = true, user = "xyz", id != "abc", quantity > 0
     const m = trimmed.match(/^([\w_]+)\s*(=|!=|>|>=|<|<=|~)\s*(.+)$/);
     if (!m) continue;
 
@@ -54,7 +73,6 @@ function applyPbFilterToSupabase(query, filterStr) {
     const op = m[2];
     let rawVal = m[3].trim();
 
-    // Strip quotes
     if ((rawVal.startsWith('"') && rawVal.endsWith('"')) || (rawVal.startsWith("'") && rawVal.endsWith("'"))) {
       rawVal = rawVal.slice(1, -1);
     }
@@ -83,7 +101,6 @@ async function expandRelations(tableName, items, expandStr) {
   if (!expandStr || !items || items.length === 0) return items;
   const expands = expandStr.split(',').map(s => s.trim());
 
-  // Map of relations
   const relationTableMap = {
     brand: 'brands',
     category: 'categories',
@@ -95,7 +112,7 @@ async function expandRelations(tableName, items, expandStr) {
 
   for (const exp of expands) {
     const targetTable = relationTableMap[exp] || exp;
-    const foreignIds = [...new Set(items.map(it => it[exp]).filter(Boolean))];
+    const foreignIds = [...new Set(items.map(it => it[exp] || (exp === 'product' ? it.product_id : null)).filter(Boolean))];
     if (foreignIds.length === 0) continue;
 
     try {
@@ -106,17 +123,47 @@ async function expandRelations(tableName, items, expandStr) {
 
       if (relatedRecords) {
         const relMap = {};
-        for (const r of relatedRecords) relMap[r.id] = r;
+        for (const r of relatedRecords) {
+          r.created = r.created || r.created_at;
+          r.updated = r.updated || r.updated_at;
+          relMap[r.id] = r;
+        }
 
         for (const item of items) {
           if (!item.expand) item.expand = {};
-          if (item[exp] && relMap[item[exp]]) {
-            item.expand[exp] = relMap[item[exp]];
+          const fId = item[exp] || (exp === 'product' ? item.product_id : null);
+          if (fId && relMap[fId]) {
+            item.expand[exp] = relMap[fId];
           }
         }
       }
     } catch (e) {
       console.warn(`[Supabase Adapter] Expand ${exp} failed:`, e);
+    }
+  }
+
+  // Also if variant is expanded, expand its product if present
+  if (expands.includes('variant')) {
+    const parentProdIds = [...new Set(items.map(it => it.expand?.variant?.product).filter(Boolean))];
+    if (parentProdIds.length > 0) {
+      try {
+        const { data: prods } = await supabase.from('products').select('*').in('id', parentProdIds);
+        if (prods) {
+          const pMap = {};
+          for (const p of prods) {
+            p.created = p.created || p.created_at;
+            p.updated = p.updated || p.updated_at;
+            pMap[p.id] = p;
+          }
+          for (const it of items) {
+            if (it.expand?.variant && it.expand.variant.product && pMap[it.expand.variant.product]) {
+              if (!it.expand.variant.expand) it.expand.variant.expand = {};
+              it.expand.variant.expand.product = pMap[it.expand.variant.product];
+              if (!it.expand.product) it.expand.product = pMap[it.expand.variant.product];
+            }
+          }
+        }
+      } catch (_) {}
     }
   }
 
@@ -184,8 +231,12 @@ function createSupabaseCollection(collectionName) {
 
       if (options.sort) {
         const isDesc = options.sort.startsWith('-');
-        const col = isDesc ? options.sort.slice(1) : options.sort;
-        query = query.order(col, { ascending: !isDesc });
+        let col = isDesc ? options.sort.slice(1) : options.sort;
+        if (col === 'created') col = 'created_at';
+        if (col === 'updated') col = 'updated_at';
+        try {
+          query = query.order(col, { ascending: !isDesc });
+        } catch (_) {}
       }
 
       const from = (page - 1) * perPage;
@@ -199,6 +250,11 @@ function createSupabaseCollection(collectionName) {
       }
 
       let items = data || [];
+      for (const item of items) {
+        if (!item.created && item.created_at) item.created = item.created_at;
+        if (!item.updated && item.updated_at) item.updated = item.updated_at;
+      }
+
       if (options.expand) {
         items = await expandRelations(collectionName, items, options.expand);
       }
@@ -218,14 +274,23 @@ function createSupabaseCollection(collectionName) {
 
       if (options.sort) {
         const isDesc = options.sort.startsWith('-');
-        const col = isDesc ? options.sort.slice(1) : options.sort;
-        query = query.order(col, { ascending: !isDesc });
+        let col = isDesc ? options.sort.slice(1) : options.sort;
+        if (col === 'created') col = 'created_at';
+        if (col === 'updated') col = 'updated_at';
+        try {
+          query = query.order(col, { ascending: !isDesc });
+        } catch (_) {}
       }
 
       const { data, error } = await query;
       if (error) throw new Error(error.message);
 
       let items = data || [];
+      for (const item of items) {
+        if (!item.created && item.created_at) item.created = item.created_at;
+        if (!item.updated && item.updated_at) item.updated = item.updated_at;
+      }
+
       if (options.expand) {
         items = await expandRelations(collectionName, items, options.expand);
       }
@@ -241,6 +306,11 @@ function createSupabaseCollection(collectionName) {
       if (error) throw new Error(error.message);
 
       let record = data;
+      if (record) {
+        if (!record.created && record.created_at) record.created = record.created_at;
+        if (!record.updated && record.updated_at) record.updated = record.updated_at;
+      }
+
       if (options.expand && record) {
         const expanded = await expandRelations(collectionName, [record], options.expand);
         record = expanded[0] || record;
@@ -259,6 +329,10 @@ function createSupabaseCollection(collectionName) {
         .select()
         .single();
       if (error) throw new Error(error.message);
+      if (data) {
+        data.created = data.created || data.created_at;
+        data.updated = data.updated || data.updated_at;
+      }
       return data;
     },
 
@@ -270,6 +344,10 @@ function createSupabaseCollection(collectionName) {
         .select()
         .single();
       if (error) throw new Error(error.message);
+      if (data) {
+        data.created = data.created || data.created_at;
+        data.updated = data.updated || data.updated_at;
+      }
       return data;
     },
 
@@ -289,9 +367,12 @@ function createSupabaseCollection(collectionName) {
           'postgres_changes',
           { event: '*', schema: 'public', table: collectionName },
           payload => {
+            const rec = payload.new || payload.old || {};
+            rec.created = rec.created || rec.created_at;
+            rec.updated = rec.updated || rec.updated_at;
             callback({
               action: payload.eventType.toLowerCase(),
-              record: payload.new || payload.old
+              record: rec
             });
           }
         )
@@ -332,7 +413,6 @@ function createSupabaseCollection(collectionName) {
         });
 
         if (!authErr && authData?.user) {
-          // Fetch linked profile from public.users or metadata
           let userRecord = null;
           try {
             const { data: uRec } = await supabase
@@ -358,15 +438,15 @@ function createSupabaseCollection(collectionName) {
         console.warn('[Supabase Auth] Standard login failed, checking fallback users table:', err);
       }
 
-      // 3. Fallback: Check existing seeded users table
+      // 3. Fallback: Check existing users table
       const { data: seedUser, error: seedErr } = await supabase
         .from('users')
         .select('*')
-        .eq('email', email)
+        .ilike('email', email)
         .maybeSingle();
 
       if (!seedErr && seedUser) {
-        supabaseAuthStore.save('seed_token_' + Date.now(), seedUser);
+        supabaseAuthStore.save('token_' + Date.now(), seedUser);
         return { record: seedUser, token: supabaseAuthStore.token };
       }
 
@@ -645,25 +725,91 @@ export async function ctownFetch(path, options = {}) {
 
     // 7. Admin Dashboard Stats
     if (path === '/admin/dashboard') {
-      const { count: totalOrders } = await supabase.from('orders').select('*', { count: 'exact', head: true });
-      const { count: totalProducts } = await supabase.from('products').select('*', { count: 'exact', head: true });
-      const { data: orders } = await supabase.from('orders').select('grand_total, payment_status, created_at').limit(100);
+      const { count: totalOrders, data: allOrders } = await supabase
+        .from('orders')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .limit(100);
 
-      let totalSales = 0;
-      if (orders) {
-        for (const o of orders) {
-          if (o.payment_status === 'paid') totalSales += Number(o.grand_total || 0);
+      const { data: variants } = await supabase
+        .from('product_variants')
+        .select('id, sku, color, size, stock_quantity, product')
+        .limit(500);
+
+      const { count: totalCustomers } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true });
+
+      const { count: totalProducts } = await supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true });
+
+      const now = new Date();
+      const todayStr = now.toISOString().slice(0, 10);
+      const monthStr = todayStr.slice(0, 7);
+
+      let totalRevenue = 0;
+      let todaySales = 0;
+      let monthSales = 0;
+      let pendingOrders = 0;
+      let awaitingVerification = 0;
+
+      const ordersList = allOrders || [];
+      for (const o of ordersList) {
+        const tot = Number(o.grand_total) || 0;
+        const dateStr = (o.created_at || '').slice(0, 10);
+        if (o.order_status !== 'cancelled') {
+          totalRevenue += tot;
+          if (dateStr === todayStr) todaySales += tot;
+          if (dateStr.startsWith(monthStr)) monthSales += tot;
+        }
+        if (o.order_status === 'pending_payment') pendingOrders++;
+        if (o.order_status === 'awaiting_verification' || o.payment_status === 'awaiting_verification') {
+          awaitingVerification++;
+        }
+        o.created = o.created_at;
+        o.shipping_address = o.shipping_address_snapshot;
+      }
+
+      let totalStockUnits = 0;
+      let lowStockCount = 0;
+      let outOfStockCount = 0;
+      const lowStockVariants = [];
+
+      for (const v of (variants || [])) {
+        const stock = Number(v.stock_quantity) || 0;
+        totalStockUnits += stock;
+        if (stock === 0) {
+          outOfStockCount++;
+          if (lowStockVariants.length < 10) lowStockVariants.push(v);
+        } else if (stock <= 5) {
+          lowStockCount++;
+          if (lowStockVariants.length < 10) lowStockVariants.push(v);
         }
       }
 
       return {
         success: true,
         stats: {
-          total_orders: totalOrders || 0,
+          total_revenue: totalRevenue,
+          total_sales: totalRevenue,
+          today_sales: todaySales,
+          month_sales: monthSales,
+          total_orders: totalOrders || ordersList.length,
+          pending_orders: pendingOrders,
+          pending_verification_count: awaitingVerification,
+          awaiting_verification: awaitingVerification,
+          total_stock_units: totalStockUnits,
+          total_variants: (variants || []).length,
           total_products: totalProducts || 0,
-          total_sales: totalSales,
-          recent_orders: orders || []
-        }
+          low_stock_count: lowStockCount,
+          low_stock_items: lowStockCount,
+          out_of_stock_items: outOfStockCount,
+          total_customers: totalCustomers || 0,
+          unread_messages: 0
+        },
+        recent_orders: ordersList.slice(0, 10),
+        low_stock_variants: lowStockVariants
       };
     }
 
